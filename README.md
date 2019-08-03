@@ -1,3 +1,9 @@
+## Deprecated repository
+
+**This repository has been moved to a monorepo you can find in [verdaccio/monorepo](https://github.com/verdaccio/monorepo). This package is located in [`plugins/aws-s3-storage` folder](https://github.com/verdaccio/monorepo/tree/master/plugins/aws-s3-storage)**
+
+---
+
 # verdaccio-aws-s3-storage
 
 📦 AWS S3 storage plugin for verdaccio
