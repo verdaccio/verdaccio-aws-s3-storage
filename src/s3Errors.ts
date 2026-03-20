@@ -1,5 +1,9 @@
+import debugCore from 'debug';
+
 import {errorUtils} from '@verdaccio/core';
 import type {VerdaccioError} from '@verdaccio/core';
+
+const debug = debugCore('verdaccio:plugin:aws-s3-storage:errors');
 
 export function is404Error(err: VerdaccioError): boolean {
   return err.code === 404;
@@ -27,6 +31,13 @@ export function create503Error(): VerdaccioError {
 
 export function convertS3Error(err: any): VerdaccioError {
   const errorName = err.name || err.code || '';
+  debug(
+    'converting AWS error name=%o statusCode=%o message=%o',
+    errorName,
+    err.$metadata?.httpStatusCode || err.statusCode,
+    err.message
+  );
+
   switch (errorName) {
     case 'NoSuchKey':
     case 'NotFound':
@@ -37,9 +48,6 @@ export function convertS3Error(err: any): VerdaccioError {
     case 'RequestAbortedError':
       return errorUtils.getInternalError('request aborted');
     default:
-      return errorUtils.getCode(
-        err.$metadata?.httpStatusCode || err.statusCode || 500,
-        err.message
-      );
+      return errorUtils.getCode(err.$metadata?.httpStatusCode || err.statusCode || 500, err.message);
   }
 }

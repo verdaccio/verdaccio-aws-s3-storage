@@ -37,8 +37,6 @@ export default class S3PackageManager {
     this.s3 = s3;
     this.tarballACL = (config.tarballACL || 'private') as ObjectCannedACL;
 
-    debug('constructor packageName: %o', packageName);
-
     const packageAccess = this.config.getMatchedPackagesSpec
       ? this.config.getMatchedPackagesSpec(packageName)
       : undefined;
@@ -49,6 +47,15 @@ export default class S3PackageManager {
     } else {
       this.packagePath = `${this.config.keyPrefix}${this.packageName}`;
     }
+
+    debug(
+      'init package=%o path=%o bucket=%o acl=%o customStorage=%o',
+      packageName,
+      this.packagePath,
+      config.bucket,
+      this.tarballACL,
+      packageAccess?.storage ?? 'none'
+    );
   }
 
   public updatePackage(
@@ -58,72 +65,86 @@ export default class S3PackageManager {
     transformPackage: (pkg: Package) => Package,
     onEnd: Callback
   ): void {
-    debug('updatePackage: %o', name);
+    debug('updatePackage name=%o path=%o', name, this.packagePath);
     void (async (): Promise<void> => {
       try {
         const json = await this._getData();
+        debug('updatePackage name=%o loaded, calling updateHandler', name);
         updateHandler(json, (err: any) => {
           if (err) {
+            debug('updatePackage name=%o updateHandler error: %o', name, err);
             onEnd(err);
           } else {
             const transformedPackage = transformPackage(json);
+            debug('updatePackage name=%o transformed, calling onWrite', name);
             onWrite(name, transformedPackage, onEnd);
           }
         });
       } catch (err) {
+        debug('updatePackage name=%o getData failed: %o', name, err);
         return onEnd(err);
       }
     })();
   }
 
   private async _getData(): Promise<Package> {
-    debug('_getData');
+    const key = `${this.packagePath}/${pkgFileName}`;
+    debug('_getData bucket=%o key=%o', this.config.bucket, key);
     const response = await this.s3.send(
       new GetObjectCommand({
         Bucket: this.config.bucket,
-        Key: `${this.packagePath}/${pkgFileName}`,
+        Key: key,
       })
     );
 
     const bodyStr = (await response.Body?.transformToString()) ?? '';
     try {
       const data = JSON.parse(bodyStr);
-      debug('_getData loaded: %o', data.name);
+      debug('_getData loaded package=%o versions=%d', data.name, Object.keys(data.versions || {}).length);
       return data;
     } catch (e) {
-      debug('error parsing package data: %o', bodyStr);
+      debug('_getData JSON parse error for key=%o bodyLength=%d', key, bodyStr.length);
       throw e;
     }
   }
 
   public deletePackage(fileName: string, callback: Callback): void {
+    const key = `${this.packagePath}/${fileName}`;
+    debug('deletePackage bucket=%o key=%o', this.config.bucket, key);
     void (async (): Promise<void> => {
       try {
         await this.s3.send(
           new DeleteObjectCommand({
             Bucket: this.config.bucket,
-            Key: `${this.packagePath}/${fileName}`,
+            Key: key,
           })
         );
+        debug('deletePackage key=%o deleted', key);
         callback(null);
       } catch (err) {
+        debug('deletePackage key=%o failed: %o', key, err);
         callback(err);
       }
     })();
   }
 
   public removePackage(callback: (err: Error | null) => void): void {
+    const prefix = addTrailingSlash(this.packagePath);
+    debug('removePackage bucket=%o prefix=%o', this.config.bucket, prefix);
     void (async (): Promise<void> => {
       try {
         await deleteKeyPrefix(this.s3, {
           Bucket: this.config.bucket,
-          Prefix: addTrailingSlash(this.packagePath),
+          Prefix: prefix,
         });
+        debug('removePackage prefix=%o removed', prefix);
         callback(null);
       } catch (err: any) {
         if (is404Error(err)) {
+          debug('removePackage prefix=%o already empty (404), ignoring', prefix);
           callback(null);
         } else {
+          debug('removePackage prefix=%o failed: %o', prefix, err);
           callback(err);
         }
       }
@@ -131,24 +152,25 @@ export default class S3PackageManager {
   }
 
   public createPackage(name: string, value: Package, callback: (err: Error | null) => void): void {
-    debug('createPackage: %o', name);
+    const key = `${this.packagePath}/${pkgFileName}`;
+    debug('createPackage name=%o bucket=%o key=%o', name, this.config.bucket, key);
     void (async (): Promise<void> => {
       try {
         await this.s3.send(
           new HeadObjectCommand({
             Bucket: this.config.bucket,
-            Key: `${this.packagePath}/${pkgFileName}`,
+            Key: key,
           })
         );
-        // Object exists — conflict
-        debug('package already exists: %o', name);
+        debug('createPackage name=%o already exists → 409', name);
         callback(create409Error());
       } catch (headErr: any) {
         const s3Err = convertS3Error(headErr);
         if (is404Error(s3Err)) {
-          debug('package not found, creating new: %o', name);
+          debug('createPackage name=%o not found → creating', name);
           this.savePackage(name, value, callback);
         } else {
+          debug('createPackage name=%o headObject error: %o', name, s3Err.message);
           callback(s3Err);
         }
       }
@@ -156,68 +178,70 @@ export default class S3PackageManager {
   }
 
   public savePackage(name: string, value: Package, callback: (err: Error | null) => void): void {
-    debug('savePackage: %o', name);
+    const key = `${this.packagePath}/${pkgFileName}`;
+    debug('savePackage name=%o bucket=%o key=%o', name, this.config.bucket, key);
     void (async (): Promise<void> => {
       try {
         await this.s3.send(
           new PutObjectCommand({
             Body: JSON.stringify(value, null, '  '),
             Bucket: this.config.bucket,
-            Key: `${this.packagePath}/${pkgFileName}`,
+            Key: key,
           })
         );
+        debug('savePackage name=%o saved', name);
         callback(null);
       } catch (err: any) {
+        debug('savePackage name=%o failed: %o', name, err.message);
         callback(err);
       }
     })();
   }
 
   public readPackage(name: string, callback: ReadPackageCallback): void {
-    debug('readPackage: %o', name);
+    debug('readPackage name=%o path=%o', name, this.packagePath);
     void (async (): Promise<void> => {
       try {
         const data = await this._getData();
+        debug('readPackage name=%o success', name);
         callback(null, data);
       } catch (err: any) {
+        debug('readPackage name=%o failed: %o', name, err.message);
         callback(convertS3Error(err));
       }
     })();
   }
 
   public writeTarball(name: string): UploadTarball {
-    debug('writeTarball: %o', name);
+    const key = `${this.packagePath}/${name}`;
+    debug('writeTarball name=%o bucket=%o key=%o acl=%o', name, this.config.bucket, key, this.tarballACL);
     const uploadStream = new UploadTarball({});
 
     let streamEnded = 0;
     uploadStream.on('end', () => {
-      debug('writeTarball stream ended: %o', name);
+      debug('writeTarball name=%o stream ended', name);
       streamEnded = 1;
     });
 
-    const key = `${this.packagePath}/${name}`;
-
     void (async (): Promise<void> => {
       try {
-        // Check if file already exists
         await this.s3.send(
           new HeadObjectCommand({
             Bucket: this.config.bucket,
             Key: key,
           })
         );
-        // File exists — 409
-        debug('writeTarball file already exists: %o', name);
+        debug('writeTarball name=%o already exists → 409', name);
         uploadStream.emit('error', create409Error());
       } catch (headErr: any) {
         const convertedErr = convertS3Error(headErr);
         if (!is404Error(convertedErr)) {
+          debug('writeTarball name=%o headObject unexpected error: %o', name, convertedErr.message);
           uploadStream.emit('error', convertedErr);
           return;
         }
 
-        // File doesn't exist, proceed with upload
-        debug('writeTarball upload init');
+        debug('writeTarball name=%o not found → starting upload', name);
         const upload = new Upload({
           client: this.s3,
           params: {
@@ -229,6 +253,7 @@ export default class S3PackageManager {
         });
 
         const uploadPromise = upload.done().catch((err) => {
+          debug('writeTarball name=%o upload failed: %o', name, err.message);
           const error = convertS3Error(err);
           uploadStream.emit('error', error);
           throw error;
@@ -240,7 +265,7 @@ export default class S3PackageManager {
           const onEnd = async (): Promise<void> => {
             try {
               await uploadPromise;
-              debug('writeTarball emit success');
+              debug('writeTarball name=%o upload complete', name);
               uploadStream.emit('success');
             } catch {
               // error already emitted above
@@ -254,7 +279,7 @@ export default class S3PackageManager {
         };
 
         uploadStream.abort = (): void => {
-          debug('writeTarball abort');
+          debug('writeTarball name=%o aborting upload', name);
           try {
             void upload.abort();
           } catch (err: any) {
@@ -263,6 +288,7 @@ export default class S3PackageManager {
           void this.s3
             .send(new DeleteObjectCommand({Bucket: this.config.bucket, Key: key}))
             .catch(() => {});
+          debug('writeTarball name=%o abort cleanup sent', name);
         };
       }
     })();
@@ -271,7 +297,8 @@ export default class S3PackageManager {
   }
 
   public readTarball(name: string): ReadTarball {
-    debug('readTarball: %o', name);
+    const key = `${this.packagePath}/${name}`;
+    debug('readTarball name=%o bucket=%o key=%o', name, this.config.bucket, key);
     const readTarballStream = new ReadTarball({});
 
     void (async (): Promise<void> => {
@@ -279,11 +306,12 @@ export default class S3PackageManager {
         const response = await this.s3.send(
           new GetObjectCommand({
             Bucket: this.config.bucket,
-            Key: `${this.packagePath}/${name}`,
+            Key: key,
           })
         );
 
         const contentLength = response.ContentLength;
+        debug('readTarball name=%o contentLength=%o', name, contentLength);
         if (contentLength) {
           readTarballStream.emit(HEADERS.CONTENT_LENGTH, contentLength);
         }
@@ -291,16 +319,17 @@ export default class S3PackageManager {
 
         const bodyStream = response.Body as Readable;
         bodyStream.on('error', (err) => {
+          debug('readTarball name=%o stream error: %o', name, (err as any).message);
           readTarballStream.emit('error', convertS3Error(err as any));
-          debug('readTarball error: %o', (err as any).message);
         });
         bodyStream.pipe(readTarballStream);
 
         readTarballStream.abort = (): void => {
-          debug('readTarball abort');
+          debug('readTarball name=%o aborting stream', name);
           bodyStream.destroy();
         };
       } catch (err: any) {
+        debug('readTarball name=%o failed: %o', name, err.message);
         readTarballStream.emit('error', convertS3Error(err));
       }
     })();

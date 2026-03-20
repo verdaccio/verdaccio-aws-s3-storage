@@ -14,7 +14,7 @@ import {createS3Client} from './s3Client';
 import S3PackageManager from './s3PackageManager';
 import setConfigValue from './setConfigValue';
 
-const debug = debugCore('verdaccio:plugin:aws-s3-storage');
+const debug = debugCore('verdaccio:plugin:aws-s3-storage:database');
 
 export default class S3Database {
   public logger: Logger;
@@ -51,14 +51,20 @@ export default class S3Database {
     this.config.keyPrefix = addTrailingSlash(configKeyPrefix);
     this.tableName = this.config.dynamoTableName;
 
-    debug('configuration: %o', this.config);
+    debug(
+      'initialized bucket=%o keyPrefix=%o region=%o dynamoTable=%o',
+      this.config.bucket,
+      this.config.keyPrefix,
+      this.config.region,
+      this.tableName
+    );
 
     this.s3 = createS3Client(this.config);
     this.dynamo = createDynamoClient(this.config);
   }
 
   public async getSecret(): Promise<string> {
-    debug('getSecret');
+    debug('getSecret from table=%o', this.tableName);
     try {
       const result = await this.dynamo.send(
         new GetCommand({
@@ -66,25 +72,28 @@ export default class S3Database {
           Key: {pk: 'CONFIG', sk: 'SECRET'},
         })
       );
+      const hasSecret = !!result.Item?.secret;
+      debug('getSecret found=%o', hasSecret);
       return result.Item?.secret ?? '';
     } catch (err) {
-      debug('getSecret error: %o', err);
+      debug('getSecret failed: %o', err);
       return '';
     }
   }
 
   public async setSecret(secret: string): Promise<void> {
-    debug('setSecret');
+    debug('setSecret table=%o', this.tableName);
     await this.dynamo.send(
       new PutCommand({
         TableName: this.tableName,
         Item: {pk: 'CONFIG', sk: 'SECRET', secret},
       })
     );
+    debug('setSecret stored successfully');
   }
 
   public add(name: string, callback: Callback): void {
-    debug('add package: %o', name);
+    debug('add package=%o table=%o', name, this.tableName);
     void (async (): Promise<void> => {
       try {
         await this.dynamo.send(
@@ -93,16 +102,17 @@ export default class S3Database {
             Item: {pk: 'PACKAGE', sk: name, name},
           })
         );
+        debug('add package=%o success', name);
         callback(null);
       } catch (err) {
-        debug('add error: %o', err);
+        debug('add package=%o failed: %o', name, err);
         callback(err);
       }
     })();
   }
 
   public remove(name: string, callback: Callback): void {
-    debug('remove package: %o', name);
+    debug('remove package=%o table=%o', name, this.tableName);
     void (async (): Promise<void> => {
       try {
         await this.dynamo.send(
@@ -111,16 +121,17 @@ export default class S3Database {
             Key: {pk: 'PACKAGE', sk: name},
           })
         );
+        debug('remove package=%o success', name);
         callback(null);
       } catch (err) {
-        debug('remove error: %o', err);
+        debug('remove package=%o failed: %o', name, err);
         callback(err);
       }
     })();
   }
 
   public get(callback: Callback): void {
-    debug('get all packages');
+    debug('get all packages from table=%o', this.tableName);
     void (async (): Promise<void> => {
       try {
         const result = await this.dynamo.send(
@@ -131,16 +142,17 @@ export default class S3Database {
           })
         );
         const list = (result.Items || []).map((item) => item.sk as string);
+        debug('get packages count=%d', list.length);
         callback(null, list);
       } catch (err) {
-        debug('get error: %o', err);
+        debug('get packages failed: %o', err);
         callback(err);
       }
     })();
   }
 
   public async search(_query: searchUtils.SearchQuery): Promise<searchUtils.SearchItem[]> {
-    debug('search');
+    debug('search not implemented');
     throw errorUtils.getServiceUnavailable();
   }
 
@@ -156,12 +168,12 @@ export default class S3Database {
   }
 
   public getPackageStorage(packageName: string): S3PackageManager {
-    debug('getPackageStorage: %o', packageName);
+    debug('getPackageStorage package=%o bucket=%o', packageName, this.config.bucket);
     return new S3PackageManager(this.config, packageName, this.logger, this.s3);
   }
 
   public async saveToken(token: Token): Promise<void> {
-    debug('saveToken for user: %o', token.user);
+    debug('saveToken user=%o key=%o table=%o', token.user, token.key, this.tableName);
     await this.dynamo.send(
       new PutCommand({
         TableName: this.tableName,
@@ -176,20 +188,22 @@ export default class S3Database {
         },
       })
     );
+    debug('saveToken user=%o key=%o stored', token.user, token.key);
   }
 
   public async deleteToken(user: string, tokenKey: string): Promise<void> {
-    debug('deleteToken for user: %o key: %o', user, tokenKey);
+    debug('deleteToken user=%o key=%o table=%o', user, tokenKey, this.tableName);
     await this.dynamo.send(
       new DeleteCommand({
         TableName: this.tableName,
         Key: {pk: `TOKEN#${user}`, sk: tokenKey},
       })
     );
+    debug('deleteToken user=%o key=%o deleted', user, tokenKey);
   }
 
   public async readTokens(filter: TokenFilter): Promise<Token[]> {
-    debug('readTokens for user: %o', filter.user);
+    debug('readTokens user=%o table=%o', filter.user, this.tableName);
     const result = await this.dynamo.send(
       new QueryCommand({
         TableName: this.tableName,
@@ -198,12 +212,14 @@ export default class S3Database {
       })
     );
 
-    return (result.Items || []).map((item) => ({
+    const tokens = (result.Items || []).map((item) => ({
       user: item.user as string,
       key: item.sk as string,
       token: item.token as string,
       readonly: item.readonly as boolean,
       created: item.created as string,
     }));
+    debug('readTokens user=%o found=%d', filter.user, tokens.length);
+    return tokens;
   }
 }
