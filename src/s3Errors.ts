@@ -1,40 +1,45 @@
-import { AWSError } from 'aws-sdk';
-import { getNotFound, getCode, getInternalError, getConflict, API_ERROR, HTTP_STATUS, VerdaccioError } from '@verdaccio/commons-api';
+import {errorUtils} from '@verdaccio/core';
+import type {VerdaccioError} from '@verdaccio/core';
 
 export function is404Error(err: VerdaccioError): boolean {
-  return err.code === HTTP_STATUS.NOT_FOUND;
+  return err.code === 404;
 }
 
 export function create404Error(): VerdaccioError {
-  return getNotFound('no such package available');
+  return errorUtils.getNotFound('no such package available');
 }
 
 export function is409Error(err: VerdaccioError): boolean {
-  return err.code === HTTP_STATUS.CONFLICT;
+  return err.code === 409;
 }
 
 export function create409Error(): VerdaccioError {
-  return getConflict('file already exists');
+  return errorUtils.getConflict('file already exists');
 }
 
 export function is503Error(err: VerdaccioError): boolean {
-  return err.code === HTTP_STATUS.SERVICE_UNAVAILABLE;
+  return err.code === 503;
 }
 
 export function create503Error(): VerdaccioError {
-  return getCode(HTTP_STATUS.SERVICE_UNAVAILABLE, 'resource temporarily unavailable');
+  return errorUtils.getCode(503, 'resource temporarily unavailable');
 }
 
-export function convertS3Error(err: AWSError): VerdaccioError {
-  switch (err.code) {
+export function convertS3Error(err: any): VerdaccioError {
+  const errorName = err.name || err.code || '';
+  switch (errorName) {
     case 'NoSuchKey':
     case 'NotFound':
-      return getNotFound();
+    case '404':
+      return errorUtils.getNotFound();
     case 'StreamContentLengthMismatch':
-      return getInternalError(API_ERROR.CONTENT_MISMATCH);
+      return errorUtils.getInternalError('content length mismatch');
     case 'RequestAbortedError':
-      return getInternalError('request aborted');
+      return errorUtils.getInternalError('request aborted');
     default:
-      return getCode(err.statusCode, err.message);
+      return errorUtils.getCode(
+        err.$metadata?.httpStatusCode || err.statusCode || 500,
+        err.message
+      );
   }
 }

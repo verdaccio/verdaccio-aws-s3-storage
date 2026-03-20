@@ -1,0 +1,39 @@
+storage: /verdaccio/storage
+
+plugins: /verdaccio/plugins
+
+store:
+  aws-s3-storage:
+    bucket: verdaccio-storage
+    keyPrefix: packages
+    region: us-east-1
+    endpoint: http://localstack:4566
+    s3ForcePathStyle: true
+    accessKeyId: test
+    secretAccessKey: test
+    dynamoTableName: verdaccio-registry
+    dynamoEndpoint: http://localstack:4566
+
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org/
+
+packages:
+  '@*/*':
+    access: $all
+    publish: $all
+    proxy: npmjs
+  '**':
+    access: $all
+    publish: $all
+    proxy: npmjs
+
+log:
+  - {type: stdout, format: pretty, level: http}
+
+listen:
+  - 0.0.0.0:4873
+
+auth:
+  htpasswd:
+    file: /verdaccio/storage/htpasswd

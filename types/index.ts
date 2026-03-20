@@ -1,4 +1,4 @@
-import { Config } from '@verdaccio/types';
+import type {Config} from '@verdaccio/types';
 
 export interface S3Config extends Config {
   bucket: string;
@@ -6,6 +6,12 @@ export interface S3Config extends Config {
   endpoint?: string;
   region?: string;
   s3ForcePathStyle?: boolean;
+  tarballACL?: string;
   accessKeyId?: string;
   secretAccessKey?: string;
+  sessionToken?: string;
+  proxy?: string;
+  dynamoTableName: string;
+  dynamoEndpoint?: string;
+  dynamoRegion?: string;
 }
