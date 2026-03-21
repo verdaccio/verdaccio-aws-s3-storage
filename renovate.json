@@ -7,8 +7,8 @@
   "labels": ["dependencies"],
   "packageRules": [
     {
-      "description": "Block @verdaccio/streams from being updated",
-      "matchPackageNames": ["@verdaccio/streams"],
+      "description": "Block @verdaccio/streams and @verdaccio/eslint-config from being updated",
+      "matchPackageNames": ["@verdaccio/streams", "@verdaccio/eslint-config"],
       "enabled": false
     },
     {
