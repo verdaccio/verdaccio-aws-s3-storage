@@ -61,8 +61,8 @@ importers:
         specifier: 12.0.0
         version: 12.0.0(@typescript-eslint/eslint-plugin@8.57.1(@typescript-eslint/parser@8.57.1(eslint@10.1.0)(typescript@5.9.3))(eslint@10.1.0)(typescript@5.9.3))(@typescript-eslint/utils@8.57.1(eslint@10.1.0)(typescript@5.9.3))(eslint@10.1.0)(typescript@5.9.3)(vitest@4.1.0(@types/node@25.5.0)(vite@8.0.1(@types/node@25.5.0)))
       '@verdaccio/types':
-        specifier: 13.0.0-next-8.10
-        version: 13.0.0-next-8.10
+        specifier: 13.0.0-next-8.11
+        version: 13.0.0-next-8.11
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -1185,8 +1185,8 @@ packages:
     resolution: {integrity: sha512-MpsLvCHUycbJO53XbwU/MMOtqP8NwSp6eelokRL9BhS/BAxDKf+qOBCzuMKLB2VA8rsfN/DsFz0L/Xk4eu8Vvw==}
     engines: {node: '>=14', npm: '>=6'}
 
-  '@verdaccio/types@13.0.0-next-8.10':
-    resolution: {integrity: sha512-qkT16EFvx3ekq2kHN58pSwzPMRAYm17MmviKx9LT6ujO+IyWoLMs38ZumSj7Ns3T86os6NakkG1O7Ls6OKspvA==}
+  '@verdaccio/types@13.0.0-next-8.11':
+    resolution: {integrity: sha512-rp3d94FVZC/xUpaDeKcSggjEeKTXafjZGiAj9JhslqU89BgGKii2lvkDSokM9v0XHdAcBHuJVP0wqo+Ba2O+3A==}
     engines: {node: '>=18'}
 
   '@vitest/eslint-plugin@1.6.12':
@@ -4805,7 +4805,7 @@ snapshots:
 
   '@verdaccio/streams@11.0.0-6-next.5': {}
 
-  '@verdaccio/types@13.0.0-next-8.10': {}
+  '@verdaccio/types@13.0.0-next-8.11': {}
 
   '@vitest/eslint-plugin@1.6.12(eslint@10.1.0)(typescript@5.9.3)(vitest@4.1.0(@types/node@25.5.0)(vite@8.0.1(@types/node@25.5.0)))':
     dependencies:
