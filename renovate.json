@@ -5,6 +5,7 @@
   "prConcurrentLimit": 1,
   "prHourlyLimit": 1,
   "labels": ["dependencies"],
+  "minimumReleaseAge": "60 days",
   "packageRules": [
     {
       "description": "Block @verdaccio/streams and @verdaccio/eslint-config from being updated",
@@ -12,9 +13,10 @@
       "enabled": false
     },
     {
-      "description": "Verdaccio packages — update immediately",
+      "description": "Verdaccio packages — update immediately, no age gate",
       "matchPackagePatterns": ["^@verdaccio/"],
       "groupName": "verdaccio",
+      "minimumReleaseAge": "0 days",
       "schedule": ["at any time"],
       "automerge": false,
       "prPriority": 10
