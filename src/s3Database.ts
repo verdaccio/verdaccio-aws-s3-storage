@@ -28,7 +28,9 @@ export default class S3Database {
     if (!config) {
       throw new Error('s3 storage missing config. Add `store.s3-storage` to your config file');
     }
-    this.config = Object.assign(config, config.store['aws-s3-storage']) as S3Config;
+    // verdaccio 7+ passes plugin config directly, older versions nest it under config.store
+    const pluginConfig = config.store?.['aws-s3-storage'] ?? {};
+    this.config = Object.assign({}, config, pluginConfig) as S3Config;
 
     if (!this.config.bucket) {
       throw new Error('s3 storage requires a bucket');
@@ -46,6 +48,9 @@ export default class S3Database {
     this.config.secretAccessKey = setConfigValue(this.config.secretAccessKey);
     this.config.sessionToken = setConfigValue(this.config.sessionToken);
     this.config.proxy = setConfigValue(this.config.proxy);
+    this.config.dynamoTableName = setConfigValue(this.config.dynamoTableName);
+    this.config.dynamoEndpoint = setConfigValue(this.config.dynamoEndpoint);
+    this.config.dynamoRegion = setConfigValue(this.config.dynamoRegion);
 
     const configKeyPrefix = this.config.keyPrefix;
     this.config.keyPrefix = addTrailingSlash(configKeyPrefix);
@@ -65,6 +70,15 @@ export default class S3Database {
 
     this.s3 = createS3Client(this.config);
     this.dynamo = createDynamoClient(this.config);
+  }
+
+  public async init(): Promise<void> {
+    debug('init: verifying connectivity');
+    this.logger.trace('aws-s3-storage: [init] verifying DynamoDB connectivity');
+    // Verify DynamoDB table is accessible by reading the secret
+    await this.getSecret();
+    debug('init: connectivity verified');
+    this.logger.trace('aws-s3-storage: [init] connectivity verified');
   }
 
   public async getSecret(): Promise<string> {

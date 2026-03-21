@@ -2,7 +2,6 @@
   "name": "verdaccio-aws-s3-storage",
   "version": "12.0.0-next.0",
   "description": "AWS S3 storage implementation for Verdaccio",
-  "type": "module",
   "main": "./lib/index.cjs",
   "module": "./lib/index.js",
   "types": "./lib/index.d.ts",
