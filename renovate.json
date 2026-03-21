@@ -7,6 +7,11 @@
   "labels": ["dependencies"],
   "packageRules": [
     {
+      "description": "Block @verdaccio/streams from being updated",
+      "matchPackageNames": ["@verdaccio/streams"],
+      "enabled": false
+    },
+    {
       "description": "Verdaccio packages — update immediately",
       "matchPackagePatterns": ["^@verdaccio/"],
       "groupName": "verdaccio",
