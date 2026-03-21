@@ -2,19 +2,13 @@
   "name": "verdaccio-aws-s3-storage",
   "version": "12.0.0",
   "description": "AWS S3 storage implementation for Verdaccio",
-  "main": "./lib/index.cjs",
-  "module": "./lib/index.js",
+  "type": "module",
+  "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "exports": {
     ".": {
-      "import": {
-        "types": "./lib/index.d.ts",
-        "default": "./lib/index.js"
-      },
-      "require": {
-        "types": "./lib/index.d.cts",
-        "default": "./lib/index.cjs"
-      }
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
     }
   },
   "engines": {
@@ -84,7 +78,7 @@
     "ci:publish": "changeset publish",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,yml,yaml,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,yml,yaml,md}\"",
-    "build": "vite build && cp lib/index.d.ts lib/index.d.cts"
+    "build": "vite build"
   },
   "funding": {
     "type": "opencollective",
