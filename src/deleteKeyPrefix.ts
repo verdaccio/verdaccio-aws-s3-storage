@@ -11,7 +11,10 @@ interface DeleteKeyPrefixOptions {
   Prefix: string;
 }
 
-export async function deleteKeyPrefix(s3: S3Client, options: DeleteKeyPrefixOptions): Promise<void> {
+export async function deleteKeyPrefix(
+  s3: S3Client,
+  options: DeleteKeyPrefixOptions
+): Promise<void> {
   debug('listing objects bucket=%o prefix=%o', options.Bucket, options.Prefix);
   const listResponse = await s3.send(new ListObjectsV2Command(options));
 

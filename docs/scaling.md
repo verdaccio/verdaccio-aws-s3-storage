@@ -34,13 +34,13 @@ No data is cached in memory or written to local disk. Any instance can serve any
 
 ## Concurrency safety
 
-| Operation | Backend | Concurrency behavior |
-|---|---|---|
-| `createPackage` | S3 `HeadObject` → `PutObject` | Two simultaneous publishes of the same version: one succeeds, the other gets a 409 conflict. Correct behavior. |
-| `add` / `remove` | DynamoDB `PutItem` / `DeleteItem` | Atomic single-item writes. No race conditions. |
-| `getSecret` | DynamoDB `GetItem` | First node to start generates the secret and stores it. All subsequent reads return the same value. |
-| `saveToken` / `readTokens` | DynamoDB `PutItem` / `Query` | Tokens are stored per-user with a unique key. Any node can authenticate any user. |
-| `readTarball` / `writeTarball` | S3 `GetObject` / multipart upload | S3 handles concurrent access natively. |
+| Operation                      | Backend                           | Concurrency behavior                                                                                           |
+| ------------------------------ | --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `createPackage`                | S3 `HeadObject` → `PutObject`     | Two simultaneous publishes of the same version: one succeeds, the other gets a 409 conflict. Correct behavior. |
+| `add` / `remove`               | DynamoDB `PutItem` / `DeleteItem` | Atomic single-item writes. No race conditions.                                                                 |
+| `getSecret`                    | DynamoDB `GetItem`                | First node to start generates the secret and stores it. All subsequent reads return the same value.            |
+| `saveToken` / `readTokens`     | DynamoDB `PutItem` / `Query`      | Tokens are stored per-user with a unique key. Any node can authenticate any user.                              |
+| `readTarball` / `writeTarball` | S3 `GetObject` / multipart upload | S3 handles concurrent access natively.                                                                         |
 
 ## Infrastructure requirements
 

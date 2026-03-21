@@ -64,7 +64,12 @@ export default class S3Database {
       this.tableName
     );
     this.logger.trace(
-      {bucket: this.config.bucket, keyPrefix: this.config.keyPrefix, region: this.config.region, dynamoTable: this.tableName},
+      {
+        bucket: this.config.bucket,
+        keyPrefix: this.config.keyPrefix,
+        region: this.config.region,
+        dynamoTable: this.tableName,
+      },
       'aws-s3-storage: plugin initialized bucket=@{bucket} keyPrefix=@{keyPrefix} region=@{region} dynamoTable=@{dynamoTable}'
     );
 
@@ -83,7 +88,10 @@ export default class S3Database {
 
   public async getSecret(): Promise<string> {
     debug('getSecret from table=%o', this.tableName);
-    this.logger.trace({table: this.tableName}, 'aws-s3-storage: [getSecret] reading from table=@{table}');
+    this.logger.trace(
+      {table: this.tableName},
+      'aws-s3-storage: [getSecret] reading from table=@{table}'
+    );
     try {
       const result = await this.dynamo.send(
         new GetCommand({
@@ -104,7 +112,10 @@ export default class S3Database {
 
   public async setSecret(secret: string): Promise<void> {
     debug('setSecret table=%o', this.tableName);
-    this.logger.trace({table: this.tableName}, 'aws-s3-storage: [setSecret] writing to table=@{table}');
+    this.logger.trace(
+      {table: this.tableName},
+      'aws-s3-storage: [setSecret] writing to table=@{table}'
+    );
     await this.dynamo.send(
       new PutCommand({
         TableName: this.tableName,
@@ -117,7 +128,10 @@ export default class S3Database {
 
   public add(name: string, callback: Callback): void {
     debug('add package=%o table=%o', name, this.tableName);
-    this.logger.trace({name, table: this.tableName}, 'aws-s3-storage: [add] adding package=@{name} to table=@{table}');
+    this.logger.trace(
+      {name, table: this.tableName},
+      'aws-s3-storage: [add] adding package=@{name} to table=@{table}'
+    );
     void (async (): Promise<void> => {
       try {
         await this.dynamo.send(
@@ -139,7 +153,10 @@ export default class S3Database {
 
   public remove(name: string, callback: Callback): void {
     debug('remove package=%o table=%o', name, this.tableName);
-    this.logger.trace({name, table: this.tableName}, 'aws-s3-storage: [remove] removing package=@{name} from table=@{table}');
+    this.logger.trace(
+      {name, table: this.tableName},
+      'aws-s3-storage: [remove] removing package=@{name} from table=@{table}'
+    );
     void (async (): Promise<void> => {
       try {
         await this.dynamo.send(
@@ -161,7 +178,10 @@ export default class S3Database {
 
   public get(callback: Callback): void {
     debug('get all packages from table=%o', this.tableName);
-    this.logger.trace({table: this.tableName}, 'aws-s3-storage: [get] querying all packages from table=@{table}');
+    this.logger.trace(
+      {table: this.tableName},
+      'aws-s3-storage: [get] querying all packages from table=@{table}'
+    );
     void (async (): Promise<void> => {
       try {
         const result = await this.dynamo.send(
@@ -230,7 +250,10 @@ export default class S3Database {
       })
     );
     debug('saveToken user=%o key=%o stored', token.user, token.key);
-    this.logger.trace({user: token.user, tokenKey: token.key}, 'aws-s3-storage: [saveToken] stored user=@{user} key=@{tokenKey}');
+    this.logger.trace(
+      {user: token.user, tokenKey: token.key},
+      'aws-s3-storage: [saveToken] stored user=@{user} key=@{tokenKey}'
+    );
   }
 
   public async deleteToken(user: string, tokenKey: string): Promise<void> {
@@ -246,7 +269,10 @@ export default class S3Database {
       })
     );
     debug('deleteToken user=%o key=%o deleted', user, tokenKey);
-    this.logger.trace({user, tokenKey}, 'aws-s3-storage: [deleteToken] deleted user=@{user} key=@{tokenKey}');
+    this.logger.trace(
+      {user, tokenKey},
+      'aws-s3-storage: [deleteToken] deleted user=@{user} key=@{tokenKey}'
+    );
   }
 
   public async readTokens(filter: TokenFilter): Promise<Token[]> {
@@ -271,7 +297,10 @@ export default class S3Database {
       created: item.created as string,
     }));
     debug('readTokens user=%o found=%d', filter.user, tokens.length);
-    this.logger.trace({user: filter.user, count: tokens.length}, 'aws-s3-storage: [readTokens] found @{count} tokens for user=@{user}');
+    this.logger.trace(
+      {user: filter.user, count: tokens.length},
+      'aws-s3-storage: [readTokens] found @{count} tokens for user=@{user}'
+    );
     return tokens;
   }
 }

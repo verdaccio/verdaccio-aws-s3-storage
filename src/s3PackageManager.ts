@@ -70,27 +70,42 @@ export default class S3PackageManager {
     onEnd: Callback
   ): void {
     debug('updatePackage name=%o path=%o', name, this.packagePath);
-    this.logger.trace({name, packagePath: this.packagePath}, 'aws-s3-storage: [updatePackage] name=@{name} path=@{packagePath}');
+    this.logger.trace(
+      {name, packagePath: this.packagePath},
+      'aws-s3-storage: [updatePackage] name=@{name} path=@{packagePath}'
+    );
     void (async (): Promise<void> => {
       try {
         const json = await this._getData();
         debug('updatePackage name=%o loaded, calling updateHandler', name);
-        this.logger.trace({name}, 'aws-s3-storage: [updatePackage] data loaded for name=@{name}, running updateHandler');
+        this.logger.trace(
+          {name},
+          'aws-s3-storage: [updatePackage] data loaded for name=@{name}, running updateHandler'
+        );
         updateHandler(json, (err: any) => {
           if (err) {
             debug('updatePackage name=%o updateHandler error: %o', name, err);
-            this.logger.trace({name, err}, 'aws-s3-storage: [updatePackage] updateHandler error for name=@{name}');
+            this.logger.trace(
+              {name, err},
+              'aws-s3-storage: [updatePackage] updateHandler error for name=@{name}'
+            );
             onEnd(err);
           } else {
             const transformedPackage = transformPackage(json);
             debug('updatePackage name=%o transformed, calling onWrite', name);
-            this.logger.trace({name}, 'aws-s3-storage: [updatePackage] transformed name=@{name}, writing');
+            this.logger.trace(
+              {name},
+              'aws-s3-storage: [updatePackage] transformed name=@{name}, writing'
+            );
             onWrite(name, transformedPackage, onEnd);
           }
         });
       } catch (err) {
         debug('updatePackage name=%o getData failed: %o', name, err);
-        this.logger.trace({name, err}, 'aws-s3-storage: [updatePackage] getData failed for name=@{name}');
+        this.logger.trace(
+          {name, err},
+          'aws-s3-storage: [updatePackage] getData failed for name=@{name}'
+        );
         return onEnd(err);
       }
     })();
@@ -99,7 +114,10 @@ export default class S3PackageManager {
   private async _getData(): Promise<Package> {
     const key = `${this.packagePath}/${pkgFileName}`;
     debug('_getData bucket=%o key=%o', this.config.bucket, key);
-    this.logger.trace({bucket: this.config.bucket, key}, 'aws-s3-storage: [_getData] fetching bucket=@{bucket} key=@{key}');
+    this.logger.trace(
+      {bucket: this.config.bucket, key},
+      'aws-s3-storage: [_getData] fetching bucket=@{bucket} key=@{key}'
+    );
     const response = await this.s3.send(
       new GetObjectCommand({
         Bucket: this.config.bucket,
@@ -110,7 +128,11 @@ export default class S3PackageManager {
     const bodyStr = (await response.Body?.transformToString()) ?? '';
     try {
       const data = JSON.parse(bodyStr);
-      debug('_getData loaded package=%o versions=%d', data.name, Object.keys(data.versions || {}).length);
+      debug(
+        '_getData loaded package=%o versions=%d',
+        data.name,
+        Object.keys(data.versions || {}).length
+      );
       this.logger.trace(
         {packageName: data.name, versions: Object.keys(data.versions || {}).length},
         'aws-s3-storage: [_getData] loaded package=@{packageName} with @{versions} versions'
@@ -118,7 +140,10 @@ export default class S3PackageManager {
       return data;
     } catch (e) {
       debug('_getData JSON parse error for key=%o bodyLength=%d', key, bodyStr.length);
-      this.logger.trace({key, bodyLength: bodyStr.length}, 'aws-s3-storage: [_getData] JSON parse error key=@{key} bodyLength=@{bodyLength}');
+      this.logger.trace(
+        {key, bodyLength: bodyStr.length},
+        'aws-s3-storage: [_getData] JSON parse error key=@{key} bodyLength=@{bodyLength}'
+      );
       throw e;
     }
   }
@@ -126,7 +151,10 @@ export default class S3PackageManager {
   public deletePackage(fileName: string, callback: Callback): void {
     const key = `${this.packagePath}/${fileName}`;
     debug('deletePackage bucket=%o key=%o', this.config.bucket, key);
-    this.logger.trace({bucket: this.config.bucket, key}, 'aws-s3-storage: [deletePackage] deleting bucket=@{bucket} key=@{key}');
+    this.logger.trace(
+      {bucket: this.config.bucket, key},
+      'aws-s3-storage: [deletePackage] deleting bucket=@{bucket} key=@{key}'
+    );
     void (async (): Promise<void> => {
       try {
         await this.s3.send(
@@ -149,7 +177,10 @@ export default class S3PackageManager {
   public removePackage(callback: (err: Error | null) => void): void {
     const prefix = addTrailingSlash(this.packagePath);
     debug('removePackage bucket=%o prefix=%o', this.config.bucket, prefix);
-    this.logger.trace({bucket: this.config.bucket, prefix}, 'aws-s3-storage: [removePackage] removing all objects bucket=@{bucket} prefix=@{prefix}');
+    this.logger.trace(
+      {bucket: this.config.bucket, prefix},
+      'aws-s3-storage: [removePackage] removing all objects bucket=@{bucket} prefix=@{prefix}'
+    );
     void (async (): Promise<void> => {
       try {
         await deleteKeyPrefix(this.s3, {
@@ -162,11 +193,17 @@ export default class S3PackageManager {
       } catch (err: any) {
         if (is404Error(err)) {
           debug('removePackage prefix=%o already empty (404), ignoring', prefix);
-          this.logger.trace({prefix}, 'aws-s3-storage: [removePackage] prefix=@{prefix} already empty, ignoring 404');
+          this.logger.trace(
+            {prefix},
+            'aws-s3-storage: [removePackage] prefix=@{prefix} already empty, ignoring 404'
+          );
           callback(null);
         } else {
           debug('removePackage prefix=%o failed: %o', prefix, err);
-          this.logger.trace({prefix, err}, 'aws-s3-storage: [removePackage] failed prefix=@{prefix}');
+          this.logger.trace(
+            {prefix, err},
+            'aws-s3-storage: [removePackage] failed prefix=@{prefix}'
+          );
           callback(err);
         }
       }
@@ -189,17 +226,26 @@ export default class S3PackageManager {
           })
         );
         debug('createPackage name=%o already exists → 409', name);
-        this.logger.trace({name, key}, 'aws-s3-storage: [createPackage] name=@{name} already exists, returning 409');
+        this.logger.trace(
+          {name, key},
+          'aws-s3-storage: [createPackage] name=@{name} already exists, returning 409'
+        );
         callback(create409Error());
       } catch (headErr: any) {
         const s3Err = convertS3Error(headErr);
         if (is404Error(s3Err)) {
           debug('createPackage name=%o not found → creating', name);
-          this.logger.trace({name, key}, 'aws-s3-storage: [createPackage] name=@{name} not found, saving new package');
+          this.logger.trace(
+            {name, key},
+            'aws-s3-storage: [createPackage] name=@{name} not found, saving new package'
+          );
           this.savePackage(name, value, callback);
         } else {
           debug('createPackage name=%o headObject error: %o', name, s3Err.message);
-          this.logger.trace({name, error: s3Err.message}, 'aws-s3-storage: [createPackage] headObject error for name=@{name}: @{error}');
+          this.logger.trace(
+            {name, error: s3Err.message},
+            'aws-s3-storage: [createPackage] headObject error for name=@{name}: @{error}'
+          );
           callback(s3Err);
         }
       }
@@ -223,11 +269,17 @@ export default class S3PackageManager {
           })
         );
         debug('savePackage name=%o saved', name);
-        this.logger.trace({name, key}, 'aws-s3-storage: [savePackage] name=@{name} written to key=@{key}');
+        this.logger.trace(
+          {name, key},
+          'aws-s3-storage: [savePackage] name=@{name} written to key=@{key}'
+        );
         callback(null);
       } catch (err: any) {
         debug('savePackage name=%o failed: %o', name, err.message);
-        this.logger.trace({name, error: err.message}, 'aws-s3-storage: [savePackage] name=@{name} write failed: @{error}');
+        this.logger.trace(
+          {name, error: err.message},
+          'aws-s3-storage: [savePackage] name=@{name} write failed: @{error}'
+        );
         callback(err);
       }
     })();
@@ -247,7 +299,10 @@ export default class S3PackageManager {
         callback(null, data);
       } catch (err: any) {
         debug('readPackage name=%o failed: %o', name, err.message);
-        this.logger.trace({name, error: err.message}, 'aws-s3-storage: [readPackage] name=@{name} failed: @{error}');
+        this.logger.trace(
+          {name, error: err.message},
+          'aws-s3-storage: [readPackage] name=@{name} failed: @{error}'
+        );
         callback(convertS3Error(err));
       }
     })();
@@ -255,7 +310,13 @@ export default class S3PackageManager {
 
   public writeTarball(name: string): UploadTarball {
     const key = `${this.packagePath}/${name}`;
-    debug('writeTarball name=%o bucket=%o key=%o acl=%o', name, this.config.bucket, key, this.tarballACL);
+    debug(
+      'writeTarball name=%o bucket=%o key=%o acl=%o',
+      name,
+      this.config.bucket,
+      key,
+      this.tarballACL
+    );
     this.logger.trace(
       {name, bucket: this.config.bucket, key, acl: this.tarballACL},
       'aws-s3-storage: [writeTarball] starting upload name=@{name} bucket=@{bucket} key=@{key} acl=@{acl}'
@@ -278,7 +339,10 @@ export default class S3PackageManager {
           })
         );
         debug('writeTarball name=%o already exists → 409', name);
-        this.logger.trace({name, key}, 'aws-s3-storage: [writeTarball] name=@{name} already exists at key=@{key}, emitting 409');
+        this.logger.trace(
+          {name, key},
+          'aws-s3-storage: [writeTarball] name=@{name} already exists at key=@{key}, emitting 409'
+        );
         uploadStream.emit('error', create409Error());
       } catch (headErr: any) {
         const convertedErr = convertS3Error(headErr);
@@ -293,7 +357,10 @@ export default class S3PackageManager {
         }
 
         debug('writeTarball name=%o not found → starting upload', name);
-        this.logger.trace({name, key}, 'aws-s3-storage: [writeTarball] name=@{name} not found, initiating multipart upload to key=@{key}');
+        this.logger.trace(
+          {name, key},
+          'aws-s3-storage: [writeTarball] name=@{name} not found, initiating multipart upload to key=@{key}'
+        );
         const upload = new Upload({
           client: this.s3,
           params: {
@@ -306,7 +373,10 @@ export default class S3PackageManager {
 
         const uploadPromise = upload.done().catch((err) => {
           debug('writeTarball name=%o upload failed: %o', name, err.message);
-          this.logger.trace({name, error: err.message}, 'aws-s3-storage: [writeTarball] upload failed for name=@{name}: @{error}');
+          this.logger.trace(
+            {name, error: err.message},
+            'aws-s3-storage: [writeTarball] upload failed for name=@{name}: @{error}'
+          );
           const error = convertS3Error(err);
           uploadStream.emit('error', error);
           throw error;
@@ -320,7 +390,10 @@ export default class S3PackageManager {
             try {
               await uploadPromise;
               debug('writeTarball name=%o upload complete', name);
-              this.logger.trace({name, key}, 'aws-s3-storage: [writeTarball] upload complete name=@{name} key=@{key}');
+              this.logger.trace(
+                {name, key},
+                'aws-s3-storage: [writeTarball] upload complete name=@{name} key=@{key}'
+              );
               uploadStream.emit('success');
             } catch {
               // error already emitted above
@@ -335,7 +408,10 @@ export default class S3PackageManager {
 
         uploadStream.abort = (): void => {
           debug('writeTarball name=%o aborting upload', name);
-          this.logger.trace({name, key}, 'aws-s3-storage: [writeTarball] aborting upload name=@{name}, cleaning up key=@{key}');
+          this.logger.trace(
+            {name, key},
+            'aws-s3-storage: [writeTarball] aborting upload name=@{name}, cleaning up key=@{key}'
+          );
           try {
             void upload.abort();
           } catch (err: any) {
@@ -395,12 +471,18 @@ export default class S3PackageManager {
 
         readTarballStream.abort = (): void => {
           debug('readTarball name=%o aborting stream', name);
-          this.logger.trace({name}, 'aws-s3-storage: [readTarball] aborting stream for name=@{name}');
+          this.logger.trace(
+            {name},
+            'aws-s3-storage: [readTarball] aborting stream for name=@{name}'
+          );
           bodyStream.destroy();
         };
       } catch (err: any) {
         debug('readTarball name=%o failed: %o', name, err.message);
-        this.logger.trace({name, error: err.message}, 'aws-s3-storage: [readTarball] failed for name=@{name}: @{error}');
+        this.logger.trace(
+          {name, error: err.message},
+          'aws-s3-storage: [readTarball] failed for name=@{name}: @{error}'
+        );
         readTarballStream.emit('error', convertS3Error(err));
       }
     })();

@@ -254,15 +254,15 @@ DEBUG=verdaccio:plugin:aws-s3-storage:database docker compose up -d
 
 Available namespaces:
 
-| Namespace | What it logs |
-|---|---|
-| `verdaccio:plugin:aws-s3-storage:database` | DynamoDB operations (add, remove, get, tokens, secret) |
-| `verdaccio:plugin:aws-s3-storage:package` | S3 package operations (read, write, create, delete, tarballs) |
-| `verdaccio:plugin:aws-s3-storage:s3-client` | S3 client initialization |
-| `verdaccio:plugin:aws-s3-storage:dynamo-client` | DynamoDB client initialization |
-| `verdaccio:plugin:aws-s3-storage:delete-prefix` | S3 prefix deletion |
-| `verdaccio:plugin:aws-s3-storage:errors` | AWS error conversion |
-| `verdaccio:plugin:aws-s3-storage:config` | Config value resolution from env vars |
+| Namespace                                       | What it logs                                                  |
+| ----------------------------------------------- | ------------------------------------------------------------- |
+| `verdaccio:plugin:aws-s3-storage:database`      | DynamoDB operations (add, remove, get, tokens, secret)        |
+| `verdaccio:plugin:aws-s3-storage:package`       | S3 package operations (read, write, create, delete, tarballs) |
+| `verdaccio:plugin:aws-s3-storage:s3-client`     | S3 client initialization                                      |
+| `verdaccio:plugin:aws-s3-storage:dynamo-client` | DynamoDB client initialization                                |
+| `verdaccio:plugin:aws-s3-storage:delete-prefix` | S3 prefix deletion                                            |
+| `verdaccio:plugin:aws-s3-storage:errors`        | AWS error conversion                                          |
+| `verdaccio:plugin:aws-s3-storage:config`        | Config value resolution from env vars                         |
 
 The plugin also uses Verdaccio's built-in `logger.trace` at key points. Enable it by setting `level: trace` in the verdaccio config (already set in `conf/config.yaml`).
 

@@ -126,8 +126,8 @@ kubectl delete -f localstack.yaml
 
 ## File overview
 
-| File | Description |
-|---|---|
-| `values.yaml` | Helm values for Verdaccio — 2 replicas, LocalStack endpoints, trace logging |
-| `localstack.yaml` | Deployment + Service for LocalStack (S3 + DynamoDB) in its own namespace |
-| `init-resources.yaml` | Job that creates the S3 bucket and DynamoDB table in LocalStack |
+| File                  | Description                                                                 |
+| --------------------- | --------------------------------------------------------------------------- |
+| `values.yaml`         | Helm values for Verdaccio — 2 replicas, LocalStack endpoints, trace logging |
+| `localstack.yaml`     | Deployment + Service for LocalStack (S3 + DynamoDB) in its own namespace    |
+| `init-resources.yaml` | Job that creates the S3 bucket and DynamoDB table in LocalStack             |

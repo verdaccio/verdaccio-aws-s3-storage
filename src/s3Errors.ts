@@ -48,6 +48,9 @@ export function convertS3Error(err: any): VerdaccioError {
     case 'RequestAbortedError':
       return errorUtils.getInternalError('request aborted');
     default:
-      return errorUtils.getCode(err.$metadata?.httpStatusCode || err.statusCode || 500, err.message);
+      return errorUtils.getCode(
+        err.$metadata?.httpStatusCode || err.statusCode || 500,
+        err.message
+      );
   }
 }

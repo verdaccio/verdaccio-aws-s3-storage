@@ -92,34 +92,34 @@ The following environment variables are used by the Docker image and the plugin 
 
 #### S3
 
-| Variable | Required | Description |
-|---|---|---|
-| `AWS_S3_BUCKET` | Yes | S3 bucket name for storing packages |
-| `AWS_S3_KEY_PREFIX` | No | Prefix (subdirectory) for all S3 keys. Default: none |
-| `AWS_S3_ENDPOINT` | No | Custom S3 endpoint URL. Required for LocalStack or MinIO. Omit for real AWS |
-| `AWS_DEFAULT_REGION` | No | AWS region for S3 and DynamoDB (if `AWS_DYNAMO_REGION` is not set). Default: SDK default |
+| Variable             | Required | Description                                                                              |
+| -------------------- | -------- | ---------------------------------------------------------------------------------------- |
+| `AWS_S3_BUCKET`      | Yes      | S3 bucket name for storing packages                                                      |
+| `AWS_S3_KEY_PREFIX`  | No       | Prefix (subdirectory) for all S3 keys. Default: none                                     |
+| `AWS_S3_ENDPOINT`    | No       | Custom S3 endpoint URL. Required for LocalStack or MinIO. Omit for real AWS              |
+| `AWS_DEFAULT_REGION` | No       | AWS region for S3 and DynamoDB (if `AWS_DYNAMO_REGION` is not set). Default: SDK default |
 
 #### DynamoDB
 
-| Variable | Required | Description |
-|---|---|---|
-| `AWS_DYNAMO_TABLE_NAME` | Yes | DynamoDB table name (must have `pk`/`sk` key schema) |
-| `AWS_DYNAMO_ENDPOINT` | No | Custom DynamoDB endpoint URL. Required for LocalStack. Omit for real AWS |
-| `AWS_DYNAMO_REGION` | No | AWS region for DynamoDB. Falls back to `AWS_DEFAULT_REGION` |
+| Variable                | Required | Description                                                              |
+| ----------------------- | -------- | ------------------------------------------------------------------------ |
+| `AWS_DYNAMO_TABLE_NAME` | Yes      | DynamoDB table name (must have `pk`/`sk` key schema)                     |
+| `AWS_DYNAMO_ENDPOINT`   | No       | Custom DynamoDB endpoint URL. Required for LocalStack. Omit for real AWS |
+| `AWS_DYNAMO_REGION`     | No       | AWS region for DynamoDB. Falls back to `AWS_DEFAULT_REGION`              |
 
 #### Authentication
 
-| Variable | Required | Description |
-|---|---|---|
-| `AWS_ACCESS_KEY_ID` | No | AWS access key. Omit to use IAM roles, instance profiles, or IRSA |
-| `AWS_SECRET_ACCESS_KEY` | No | AWS secret key. Required if `AWS_ACCESS_KEY_ID` is set |
-| `AWS_SESSION_TOKEN` | No | AWS session token for temporary credentials (STS) |
+| Variable                | Required | Description                                                       |
+| ----------------------- | -------- | ----------------------------------------------------------------- |
+| `AWS_ACCESS_KEY_ID`     | No       | AWS access key. Omit to use IAM roles, instance profiles, or IRSA |
+| `AWS_SECRET_ACCESS_KEY` | No       | AWS secret key. Required if `AWS_ACCESS_KEY_ID` is set            |
+| `AWS_SESSION_TOKEN`     | No       | AWS session token for temporary credentials (STS)                 |
 
 #### Debug
 
-| Variable | Required | Description |
-|---|---|---|
-| `DEBUG` | No | Enable [debug](https://www.npmjs.com/package/debug) output. Set to `verdaccio:plugin*` for all plugin namespaces |
+| Variable | Required | Description                                                                                                      |
+| -------- | -------- | ---------------------------------------------------------------------------------------------------------------- |
+| `DEBUG`  | No       | Enable [debug](https://www.npmjs.com/package/debug) output. Set to `verdaccio:plugin*` for all plugin namespaces |
 
 Available debug namespaces:
 
