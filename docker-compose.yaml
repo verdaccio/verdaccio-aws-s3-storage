@@ -58,9 +58,12 @@ services:
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_DEFAULT_REGION=us-east-1
-      - DEBUG=verdaccio:plugin:aws-s3-storage:*
-    volumes:
-      - ./conf:/verdaccio/conf
+      - AWS_S3_BUCKET=verdaccio-storage
+      - AWS_S3_KEY_PREFIX=packages
+      - AWS_S3_ENDPOINT=http://localstack:4566
+      - AWS_DYNAMO_TABLE_NAME=verdaccio-registry
+      - AWS_DYNAMO_ENDPOINT=http://localstack:4566
+      - DEBUG=verdaccio:plugin*
     ports:
       - '4873:4873'
 

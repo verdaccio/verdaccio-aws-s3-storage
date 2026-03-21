@@ -1,0 +1,118 @@
+# Verdaccio Helm chart values — local development with LocalStack
+# Chart: https://github.com/verdaccio/charts
+#
+# This example runs Verdaccio with the AWS S3 + DynamoDB storage plugin
+# backed by LocalStack for fully local development — no AWS account needed.
+#
+# Prerequisites:
+#   1. A Kubernetes cluster (minikube, kind, Docker Desktop, etc.)
+#   2. Helm 3 installed
+#   3. LocalStack deployed in the same cluster (see README.md)
+#   4. A Docker image with the plugin pre-installed
+#
+# Quick start:
+#   helm repo add verdaccio https://charts.verdaccio.org
+#   kubectl apply -f localstack.yaml
+#   kubectl apply -f init-resources.yaml
+#   helm install verdaccio verdaccio/verdaccio -f values.yaml
+
+replicaCount: 2
+
+image:
+  # Build from the repo root:
+  #   docker build -t verdaccio-aws-s3:local .
+  # For minikube: eval $(minikube docker-env) before building
+  # For kind: kind load docker-image verdaccio-aws-s3:local
+  repository: verdaccio-aws-s3
+  tag: local
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+
+extraEnvVars:
+  - name: AWS_DEFAULT_REGION
+    value: us-east-1
+  - name: AWS_ACCESS_KEY_ID
+    value: test
+  - name: AWS_SECRET_ACCESS_KEY
+    value: test
+  - name: AWS_S3_BUCKET
+    value: verdaccio-storage
+  - name: AWS_S3_KEY_PREFIX
+    value: packages
+  - name: AWS_S3_ENDPOINT
+    value: http://localstack.localstack.svc.cluster.local:4566
+  - name: AWS_DYNAMO_TABLE_NAME
+    value: verdaccio-registry
+  - name: AWS_DYNAMO_ENDPOINT
+    value: http://localstack.localstack.svc.cluster.local:4566
+  - name: DEBUG
+    value: 'verdaccio:plugin*'
+
+configMap: |
+  storage: /verdaccio/storage
+  plugins: /verdaccio/plugins
+
+  store:
+    aws-s3-storage:
+      bucket: AWS_S3_BUCKET
+      keyPrefix: AWS_S3_KEY_PREFIX
+      region: AWS_DEFAULT_REGION
+      endpoint: AWS_S3_ENDPOINT
+      s3ForcePathStyle: true
+      accessKeyId: AWS_ACCESS_KEY_ID
+      secretAccessKey: AWS_SECRET_ACCESS_KEY
+      dynamoTableName: AWS_DYNAMO_TABLE_NAME
+      dynamoEndpoint: AWS_DYNAMO_ENDPOINT
+
+  uplinks:
+    npmjs:
+      url: https://registry.npmjs.org/
+
+  packages:
+    '@*/*':
+      access: $all
+      publish: $all
+      proxy: npmjs
+    '**':
+      access: $all
+      publish: $all
+      proxy: npmjs
+
+  log:
+    - type: stdout
+      format: pretty
+      level: trace
+
+  listen:
+    - 0.0.0.0:4873
+
+  auth:
+    htpasswd:
+      file: /verdaccio/storage/htpasswd
+
+persistence:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+readinessProbe:
+  httpGet:
+    path: /-/ping
+    port: 4873
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+livenessProbe:
+  httpGet:
+    path: /-/ping
+    port: 4873
+  initialDelaySeconds: 10
+  periodSeconds: 30

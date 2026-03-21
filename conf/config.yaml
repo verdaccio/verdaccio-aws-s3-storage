@@ -4,15 +4,15 @@ plugins: /verdaccio/plugins
 
 store:
   aws-s3-storage:
-    bucket: verdaccio-storage
-    keyPrefix: packages
-    region: us-east-1
-    endpoint: http://localstack:4566
+    bucket: AWS_S3_BUCKET
+    keyPrefix: AWS_S3_KEY_PREFIX
+    region: AWS_DEFAULT_REGION
+    endpoint: AWS_S3_ENDPOINT
     s3ForcePathStyle: true
-    accessKeyId: test
-    secretAccessKey: test
-    dynamoTableName: verdaccio-registry
-    dynamoEndpoint: http://localstack:4566
+    accessKeyId: AWS_ACCESS_KEY_ID
+    secretAccessKey: AWS_SECRET_ACCESS_KEY
+    dynamoTableName: AWS_DYNAMO_TABLE_NAME
+    dynamoEndpoint: AWS_DYNAMO_ENDPOINT
 
 uplinks:
   npmjs:
@@ -29,7 +29,7 @@ packages:
     proxy: npmjs
 
 log:
-  - {type: stdout, format: pretty, level: http}
+  - {type: stdout, format: pretty, level: trace}
 
 listen:
   - 0.0.0.0:4873

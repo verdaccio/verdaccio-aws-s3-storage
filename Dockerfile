@@ -28,8 +28,12 @@ USER root
 RUN mkdir -p /verdaccio/plugins/verdaccio-aws-s3-storage
 COPY --from=builder /plugin/lib/          /verdaccio/plugins/verdaccio-aws-s3-storage/lib/
 COPY --from=builder /plugin/package.json  /verdaccio/plugins/verdaccio-aws-s3-storage/
+
 COPY --from=builder /plugin/node_modules/ /verdaccio/plugins/verdaccio-aws-s3-storage/node_modules/
 
-RUN chown -R 10001:65533 /verdaccio/plugins
+# Bake the default config into the image
+COPY conf/config.yaml /verdaccio/conf/config.yaml
+
+RUN chown -R 10001:65533 /verdaccio/plugins /verdaccio/conf
 
 USER 10001

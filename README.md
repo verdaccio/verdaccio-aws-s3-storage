@@ -9,7 +9,7 @@ Built with AWS SDK for JavaScript v3.
 ## Requirements
 
 - **Node.js** >= 24
-- **Verdaccio** >= 67.x
+- **Verdaccio** >= 7.x
 - **AWS S3 Bucket** — stores package tarballs and `package.json` metadata
 - **AWS DynamoDB Table** — stores the registry state (package list, secret, auth tokens)
   - Partition key: `pk` (String)
@@ -74,14 +74,62 @@ Config values can reference environment variables by name. If the environment va
 ```yaml
 store:
   aws-s3-storage:
-    bucket: S3_BUCKET # uses $S3_BUCKET if set, otherwise literal "S3_BUCKET"
-    keyPrefix: S3_KEY_PREFIX
-    region: AWS_REGION
+    bucket: AWS_S3_BUCKET # uses $AWS_S3_BUCKET if set, otherwise literal "AWS_S3_BUCKET"
+    keyPrefix: AWS_S3_KEY_PREFIX
+    region: AWS_DEFAULT_REGION
+    endpoint: AWS_S3_ENDPOINT
     accessKeyId: AWS_ACCESS_KEY_ID
     secretAccessKey: AWS_SECRET_ACCESS_KEY
     sessionToken: AWS_SESSION_TOKEN
-    dynamoTableName: DYNAMO_TABLE_NAME
+    dynamoTableName: AWS_DYNAMO_TABLE_NAME
+    dynamoEndpoint: AWS_DYNAMO_ENDPOINT
+    dynamoRegion: AWS_DYNAMO_REGION
 ```
+
+### Environment variables reference
+
+The following environment variables are used by the Docker image and the plugin when config values reference them:
+
+#### S3
+
+| Variable | Required | Description |
+|---|---|---|
+| `AWS_S3_BUCKET` | Yes | S3 bucket name for storing packages |
+| `AWS_S3_KEY_PREFIX` | No | Prefix (subdirectory) for all S3 keys. Default: none |
+| `AWS_S3_ENDPOINT` | No | Custom S3 endpoint URL. Required for LocalStack or MinIO. Omit for real AWS |
+| `AWS_DEFAULT_REGION` | No | AWS region for S3 and DynamoDB (if `AWS_DYNAMO_REGION` is not set). Default: SDK default |
+
+#### DynamoDB
+
+| Variable | Required | Description |
+|---|---|---|
+| `AWS_DYNAMO_TABLE_NAME` | Yes | DynamoDB table name (must have `pk`/`sk` key schema) |
+| `AWS_DYNAMO_ENDPOINT` | No | Custom DynamoDB endpoint URL. Required for LocalStack. Omit for real AWS |
+| `AWS_DYNAMO_REGION` | No | AWS region for DynamoDB. Falls back to `AWS_DEFAULT_REGION` |
+
+#### Authentication
+
+| Variable | Required | Description |
+|---|---|---|
+| `AWS_ACCESS_KEY_ID` | No | AWS access key. Omit to use IAM roles, instance profiles, or IRSA |
+| `AWS_SECRET_ACCESS_KEY` | No | AWS secret key. Required if `AWS_ACCESS_KEY_ID` is set |
+| `AWS_SESSION_TOKEN` | No | AWS session token for temporary credentials (STS) |
+
+#### Debug
+
+| Variable | Required | Description |
+|---|---|---|
+| `DEBUG` | No | Enable [debug](https://www.npmjs.com/package/debug) output. Set to `verdaccio:plugin*` for all plugin namespaces |
+
+Available debug namespaces:
+
+- `verdaccio:plugin:aws-s3-storage:database` — DynamoDB operations (add, remove, get, tokens, secret)
+- `verdaccio:plugin:aws-s3-storage:package` — S3 package operations (read, write, create, delete, tarballs)
+- `verdaccio:plugin:aws-s3-storage:s3-client` — S3 client initialization
+- `verdaccio:plugin:aws-s3-storage:dynamo-client` — DynamoDB client initialization
+- `verdaccio:plugin:aws-s3-storage:delete-prefix` — S3 prefix deletion
+- `verdaccio:plugin:aws-s3-storage:errors` — AWS error conversion
+- `verdaccio:plugin:aws-s3-storage:config` — config value resolution from env vars
 
 ### Custom storage per package scope
 
@@ -145,138 +193,13 @@ Single-table design with partition key `pk` and sort key `sk`:
 
 ## Development
 
-### Prerequisites
+See [LOCAL_DEV.md](LOCAL_DEV.md) for the full local development guide, including:
 
-- Node.js >= 24 (see `.nvmrc`)
-- [pnpm](https://pnpm.io/) >= 9
-- [Docker](https://docs.docker.com/get-docker/) and Docker Compose (for local testing)
-
-### Setup
-
-```bash
-# Install dependencies
-pnpm install
-
-# Type-check
-pnpm type-check
-
-# Build
-pnpm build
-
-# Run unit tests
-pnpm test
-
-# Run tests in watch mode
-pnpm test:watch
-```
-
-### Project structure
-
-```
-src/
-  index.ts              # barrel export
-  s3Database.ts         # registry database (DynamoDB)
-  s3PackageManager.ts   # package storage (S3)
-  s3Client.ts           # S3Client factory
-  dynamoClient.ts       # DynamoDB DocumentClient factory
-  s3Errors.ts           # AWS error → VerdaccioError conversion
-  deleteKeyPrefix.ts    # S3 prefix deletion helper
-  addTrailingSlash.ts   # path utility
-  setConfigValue.ts     # env var resolution
-types/
-  index.ts              # S3Config interface
-tests/                  # unit tests (vitest 4)
-conf/                   # local dev verdaccio config
-```
-
-### Running locally with Docker
-
-The included `docker-compose.yaml` provides a full local setup with:
-
-- **LocalStack** (latest) — local AWS cloud with S3 + DynamoDB
-- **init-resources** — one-shot container that creates the S3 bucket and DynamoDB table
-- **Verdaccio** (`nightly-master`) — runs with the plugin built and installed
-
-#### First run
-
-```bash
-# Build the plugin image and start everything
-docker compose up -d --build
-
-# Verdaccio will be available at http://localhost:4873
-```
-
-#### What happens on startup
-
-1. LocalStack starts and exposes S3 + DynamoDB on port `4566`
-2. `init-resources` waits for LocalStack to be healthy, then creates:
-   - S3 bucket: `verdaccio-storage`
-   - DynamoDB table: `verdaccio-registry` (pk: String, sk: String, PAY_PER_REQUEST)
-3. The `Dockerfile` builds the plugin in a multi-stage build:
-   - **Stage 1** (`node:24-alpine`): installs deps with pnpm, runs `vite build`, prunes dev deps
-   - **Stage 2** (`verdaccio/verdaccio:nightly-master`): copies `lib/`, `package.json`, and prod `node_modules/` into `/verdaccio/plugins/verdaccio-aws-s3-storage/`
-4. Verdaccio starts with the plugin configured to use LocalStack endpoints
-
-#### Check it's working
-
-```bash
-# Check logs — look for "verdaccio-aws-s3-storage successfully loaded"
-docker compose logs verdaccio
-
-# Ping the registry
-curl http://localhost:4873/-/ping
-```
-
-#### Testing the local setup
-
-```bash
-# Add a user
-npm adduser --registry http://localhost:4873
-
-# Publish a package
-npm publish --registry http://localhost:4873
-
-# Install a package
-npm install your-package --registry http://localhost:4873
-
-# Verify data landed in S3
-docker exec localstack awslocal s3 ls s3://verdaccio-storage/ --recursive
-
-# Verify data in DynamoDB
-docker exec localstack awslocal dynamodb scan --table-name verdaccio-registry
-```
-
-#### Rebuilding after code changes
-
-After modifying source code in `src/` or `types/`, rebuild the verdaccio image and restart:
-
-```bash
-# Rebuild only the verdaccio service (uses Docker cache for unchanged layers)
-docker compose build verdaccio
-
-# Restart with the new image
-docker compose up -d
-
-# Or do both in one command
-docker compose up -d --build
-```
-
-To force a clean rebuild (no cache):
-
-```bash
-docker compose build --no-cache verdaccio
-docker compose up -d
-```
-
-#### Stopping and cleaning up
-
-```bash
-# Stop all containers
-docker compose down
-
-# Stop and remove volumes (wipes LocalStack data)
-docker compose down -v
-```
+- Setup, build, test, and lint commands
+- Running Verdaccio + LocalStack via Docker Compose
+- Inspecting S3 and DynamoDB data in LocalStack
+- Debug logging namespaces
+- Helm + LocalStack example for Kubernetes
 
 ### Creating the DynamoDB table (production)
 
@@ -335,6 +258,13 @@ Resources:
         - AttributeName: sk
           KeyType: RANGE
 ```
+
+## Scaling & Production Deployment
+
+The plugin is fully stateless and supports horizontal scaling. Run multiple Verdaccio instances behind a load balancer — all instances share the same S3 bucket and DynamoDB table.
+
+- [Scaling guide](docs/scaling.md) — architecture, concurrency safety, ECS/Fargate, Kubernetes, monitoring, cost estimation
+- [Helm example](examples/helm/) — deploy on Kubernetes using the official Verdaccio Helm chart with IRSA support
 
 ## License
 
