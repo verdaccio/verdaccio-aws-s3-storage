@@ -4,7 +4,6 @@ import type {S3Client} from '@aws-sdk/client-s3';
 import debugCore from 'debug';
 
 import type {searchUtils} from '@verdaccio/core';
-import {errorUtils} from '@verdaccio/core';
 import type {Callback, Config, Logger, Token, TokenFilter} from '@verdaccio/types';
 
 import type {S3Config} from '../types';
@@ -203,21 +202,73 @@ export default class S3Database {
     })();
   }
 
-  public async search(_query: searchUtils.SearchQuery): Promise<searchUtils.SearchItem[]> {
-    debug('search not implemented');
-    this.logger.trace('aws-s3-storage: [search] not implemented, throwing 503');
-    throw errorUtils.getServiceUnavailable();
+  /**
+   * Search packages. Verdaccio 6/7 calls this with callback pattern: search(onPackage, onEnd).
+   * Newer versions may call with search(query): Promise<SearchItem[]>.
+   * We support both signatures.
+   */
+  public search(...args: any[]): any {
+    // Callback pattern: search(onPackage, onEnd)
+    if (typeof args[0] === 'function') {
+      const onPackage = args[0] as (item: any, cb: any) => void;
+      const onEnd = args[1] as () => void;
+      debug('search (callback): iterating packages from DynamoDB');
+      this.logger.trace('aws-s3-storage: [search] callback pattern, iterating packages');
+      void (async (): Promise<void> => {
+        try {
+          const result = await this.dynamo.send(
+            new QueryCommand({
+              TableName: this.tableName,
+              KeyConditionExpression: 'pk = :pk',
+              ExpressionAttributeValues: {':pk': 'PACKAGE'},
+            })
+          );
+          const items = result.Items || [];
+          debug('search: found %d packages', items.length);
+          for (const item of items) {
+            await new Promise<void>((resolve): void => {
+              onPackage(
+                {
+                  name: item.sk as string,
+                  path: item.sk as string,
+                  time: Date.now(),
+                },
+                resolve
+              );
+            });
+          }
+          onEnd();
+        } catch (err) {
+          debug('search error: %o', err);
+          this.logger.trace({err}, 'aws-s3-storage: [search] error during iteration');
+          onEnd();
+        }
+      })();
+      return;
+    }
+
+    // Promise pattern: search(query): Promise<SearchItem[]>
+    debug('search (promise): returning empty results (delegated to uplinks)');
+    this.logger.trace('aws-s3-storage: [search] promise pattern, returning empty results');
+    return Promise.resolve([]);
   }
 
   public async filterByQuery(
     _results: searchUtils.SearchItemPkg[],
     _query: searchUtils.SearchQuery
   ): Promise<searchUtils.SearchItemPkg[]> {
-    throw errorUtils.getServiceUnavailable();
+    return _results;
   }
 
   public async getScore(_pkg: searchUtils.SearchItemPkg): Promise<searchUtils.Score> {
-    throw errorUtils.getServiceUnavailable();
+    return {
+      final: 1,
+      detail: {
+        quality: 1,
+        popularity: 1,
+        maintenance: 1,
+      },
+    };
   }
 
   public getPackageStorage(packageName: string): S3PackageManager {

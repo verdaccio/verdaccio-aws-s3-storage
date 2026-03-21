@@ -186,19 +186,24 @@ describe('S3Database', () => {
   });
 
   describe('search / filterByQuery / getScore', () => {
-    test('search throws service unavailable', async () => {
+    test('search returns empty array', async () => {
       const db = createDb();
-      await expect(db.search({} as any)).rejects.toMatchObject({code: 503});
+      const results = await db.search({} as any);
+      expect(results).toEqual([]);
     });
 
-    test('filterByQuery throws service unavailable', async () => {
+    test('filterByQuery returns results as-is', async () => {
       const db = createDb();
-      await expect(db.filterByQuery([], {} as any)).rejects.toMatchObject({code: 503});
+      const input = [{package: {name: 'test'}}] as any;
+      const results = await db.filterByQuery(input, {} as any);
+      expect(results).toBe(input);
     });
 
-    test('getScore throws service unavailable', async () => {
+    test('getScore returns default score', async () => {
       const db = createDb();
-      await expect(db.getScore({} as any)).rejects.toMatchObject({code: 503});
+      const score = await db.getScore({} as any);
+      expect(score.final).toBe(1);
+      expect(score.detail.quality).toBe(1);
     });
   });
 
