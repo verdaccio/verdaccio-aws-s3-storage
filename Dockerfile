@@ -20,7 +20,7 @@ RUN pnpm prune --prod
 ###############################################
 # Stage 2 – verdaccio + plugin
 ###############################################
-FROM verdaccio/verdaccio:latest
+FROM verdaccio/verdaccio:7.x-next
 
 USER root
 

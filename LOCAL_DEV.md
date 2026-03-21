@@ -77,7 +77,7 @@ docker compose up -d --build
    - DynamoDB table: `verdaccio-registry` (pk: String, sk: String, PAY_PER_REQUEST)
 3. The `Dockerfile` builds the plugin in a multi-stage build:
    - **Stage 1** (`node:24-alpine`): installs deps with pnpm, runs `vite build`, prunes dev deps
-   - **Stage 2** (`verdaccio/verdaccio:latest`): copies `lib/`, `package.json`, and prod `node_modules/` into `/verdaccio/plugins/verdaccio-aws-s3-storage/`
+   - **Stage 2** (`verdaccio/verdaccio:7.x-next`): copies `lib/`, `package.json`, and prod `node_modules/` into `/verdaccio/plugins/verdaccio-aws-s3-storage/`
 4. Verdaccio starts with the plugin configured to use LocalStack endpoints
 
 ### Check it's working
