@@ -1,6 +1,6 @@
 {
   "name": "verdaccio-aws-s3-storage",
-  "version": "12.0.0-next.0",
+  "version": "11.1.0-next.0",
   "description": "AWS S3 storage implementation for Verdaccio",
   "main": "./lib/index.cjs",
   "module": "./lib/index.js",
