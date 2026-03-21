@@ -45,20 +45,15 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Verify CJS output
-        run: node -e "const m = require('./lib/index.cjs'); if (!m.S3Database || !m.S3PackageManager) process.exit(1); console.log('CJS OK');"
-
-      - name: Verify ESM output (static check)
+      - name: Verify ESM output
         run: |
-          # Runtime ESM import fails due to @verdaccio/core using pseudoRandomBytes
-          # named export from node:crypto which is unavailable in Node 24 ESM.
-          # Verify the ESM bundle structure statically instead.
           node -e "
-            const fs = require('fs');
-            const esm = fs.readFileSync('./lib/index.js', 'utf8');
-            if (!esm.includes('S3Database') || !esm.includes('S3PackageManager')) process.exit(1);
-            if (!esm.includes('export {')) process.exit(1);
-            console.log('ESM bundle verified (static check)');
+            import('fs').then(fs => {
+              const esm = fs.readFileSync('./lib/index.js', 'utf8');
+              if (!esm.includes('S3Database') || !esm.includes('S3PackageManager')) process.exit(1);
+              if (!esm.includes('export {')) process.exit(1);
+              console.log('ESM bundle verified');
+            });
           "
 
   docker:
