@@ -1,5 +1,11 @@
 # verdaccio-aws-s3-storage
 
+## 12.0.2
+
+### Patch Changes
+
+- ec1b76e: fix: ignore files
+
 ## 12.0.1
 
 ### Patch Changes
