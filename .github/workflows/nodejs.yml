@@ -118,6 +118,21 @@ jobs:
 
           [ "$RESULT" = "ci-test-pkg" ] && echo "E2E passed" || { echo "E2E failed"; exit 1; }
 
+      - name: E2E UI - publish tests (Cypress)
+        run: pnpm e2e:ui:run
+        env:
+          VERDACCIO_URL: http://localhost:4873
+
+      - name: Upload Cypress artifacts
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-artifacts
+          path: |
+            cypress/videos
+            cypress/screenshots
+          retention-days: 7
+
       - name: Stop services
         if: always()
         run: docker compose down -v
