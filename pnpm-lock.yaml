@@ -63,6 +63,9 @@ importers:
       '@verdaccio/plugin-verifier':
         specifier: 1.0.0-next-9.6
         version: 1.0.0-next-9.6(typanion@3.14.0)
+      '@verdaccio/registry-cli':
+        specifier: ^1.1.0
+        version: 1.1.0
       '@verdaccio/types':
         specifier: 13.0.0-next-8.12
         version: 13.0.0-next-8.12
@@ -1197,6 +1200,11 @@ packages:
 
   '@verdaccio/plugin-verifier@1.0.0-next-9.6':
     resolution: {integrity: sha512-Rqp5F6lvMqk2Z3KmLqzbyxn7YrmsDpfnwmVVspDnYbjwqjEGAzt3pPjrQ6JQzEQ1r9WnNu/L1BSad2xGMjjNdg==}
+    engines: {node: '>=24'}
+    hasBin: true
+
+  '@verdaccio/registry-cli@1.1.0':
+    resolution: {integrity: sha512-YXgHbKKQKTRH0ilt058i4IaU5rkyqzWjQXI+zrlGmtaRLbHXqMcHczq1PtkaT3pkQdIGohPelcjQX8gsUH+KDA==}
     engines: {node: '>=24'}
     hasBin: true
 
@@ -5346,6 +5354,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - typanion
+
+  '@verdaccio/registry-cli@1.1.0': {}
 
   '@verdaccio/streams@11.0.0-6-next.5': {}
 
