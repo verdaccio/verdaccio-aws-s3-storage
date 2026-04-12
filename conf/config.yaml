@@ -14,6 +14,14 @@ store:
     dynamoTableName: AWS_DYNAMO_TABLE_NAME
     dynamoEndpoint: AWS_DYNAMO_ENDPOINT
 
+web:
+  enable: true
+  login: true
+
+userRateLimit:
+  windowMs: 1000
+  max: 10000
+
 uplinks:
   npmjs:
     url: https://registry.npmjs.org/
@@ -21,11 +29,13 @@ uplinks:
 packages:
   '@*/*':
     access: $all
-    publish: $all
+    publish: $anonymous $authenticated
+    unpublish: $anonymous $authenticated
     proxy: npmjs
   '**':
     access: $all
-    publish: $all
+    publish: $anonymous $authenticated
+    unpublish: $anonymous $authenticated
     proxy: npmjs
 
 log:

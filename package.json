@@ -52,10 +52,12 @@
     "@types/debug": "4.1.12",
     "@types/jsonwebtoken": "9.0.10",
     "@types/node": "25.5.0",
+    "@verdaccio/e2e-ui": "^2.3.0",
     "@verdaccio/eslint-config": "12.0.0",
     "@verdaccio/plugin-verifier": "1.0.0-next-9.1",
     "@verdaccio/types": "13.0.0-next-8.10",
     "cross-env": "^7.0.3",
+    "cypress": "^15.13.1",
     "eslint": "10.0.2",
     "prettier": "3.8.1",
     "rimraf": "^5.0.0",
@@ -78,7 +80,9 @@
     "ci:publish": "changeset publish",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,yml,yaml,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,yml,yaml,md}\"",
-    "build": "vite build"
+    "build": "vite build",
+    "e2e:ui": "cypress open",
+    "e2e:ui:run": "cypress run"
   },
   "funding": {
     "type": "opencollective",
