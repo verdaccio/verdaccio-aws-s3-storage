@@ -39,11 +39,11 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
-      - name: Test
-        run: pnpm test
-
       - name: Build
         run: pnpm build
+
+      - name: Test
+        run: pnpm test
 
       - name: Verify ESM output
         run: |
