@@ -1,5 +1,11 @@
 # verdaccio-aws-s3-storage
 
+## 12.0.3
+
+### Patch Changes
+
+- 73152e7: fix: build package before publishing so `lib/` is included in the published tarball
+
 ## 12.0.2
 
 ### Patch Changes
