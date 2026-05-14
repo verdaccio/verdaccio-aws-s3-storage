@@ -1,5 +1,11 @@
 # verdaccio-aws-s3-storage
 
+## 12.0.4
+
+### Patch Changes
+
+- 5d465ff: chore: release bump
+
 ## 12.0.3
 
 ### Patch Changes
