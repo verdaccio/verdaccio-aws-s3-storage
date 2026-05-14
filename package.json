@@ -25,10 +25,10 @@
   "homepage": "https://verdaccio.org",
   "repository": {
     "type": "git",
-    "url": "https://github.com/verdaccio/aws-s3-storage.git"
+    "url": "https://github.com/verdaccio/verdaccio-aws-s3-storage.git"
   },
   "bugs": {
-    "url": "https://github.com/verdaccio/aws-s3-storage/issues"
+    "url": "https://github.com/verdaccio/verdaccio-aws-s3-storage/issues"
   },
   "files": [
     "lib/"
