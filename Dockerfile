@@ -3,10 +3,11 @@
 ###############################################
 FROM node:24-alpine AS builder
 
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN corepack enable
 
 WORKDIR /plugin
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN corepack install
 RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.json vite.config.ts ./
