@@ -2,7 +2,7 @@
 
 AWS S3 + DynamoDB storage plugin for [Verdaccio](https://verdaccio.org).
 
-Uses **S3** for package tarballs and metadata, and **DynamoDB** for the registry database (package list, secrets, tokens). 
+Uses **S3** for package tarballs and metadata, and **DynamoDB** for the registry database (package list, secrets, tokens).
 
 For AWS-compatible S3 that do not include DynamoDB, you can use **S3** for the registry data as well (as in older versions of the plugin).
 
@@ -63,7 +63,7 @@ store:
     sessionToken: your-token # optional
     proxy: https://your-proxy # optional
 
-    # DynamoDB 
+    # DynamoDB
     dynamoTableName: verdaccio-registry
     dynamoEndpoint: https://dynamodb.us-east-1.amazonaws.com # optional
     dynamoRegion: us-east-1 # optional, defaults to 'region'
@@ -175,7 +175,7 @@ Set `tarballACL: public-read` to grant anonymous read access for CDN integration
    +-----------------+
 ```
 
-or 
+or
 
 ```
                    +-----------+

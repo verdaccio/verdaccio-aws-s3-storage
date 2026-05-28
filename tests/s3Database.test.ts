@@ -1,6 +1,6 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { GetCommand, PutCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import type { Logger, Config } from '@verdaccio/types';
+import {describe, test, expect, vi, beforeEach} from 'vitest';
+import {GetCommand, PutCommand, DeleteCommand, QueryCommand} from '@aws-sdk/lib-dynamodb';
+import type {Logger, Config} from '@verdaccio/types';
 
 import S3Database from '../src/s3Database';
 import S3PackageManager from '../src/s3PackageManager';
@@ -41,7 +41,7 @@ function makeDbConfig(tableName: string) {
 }
 
 function createDb(tableName: string): S3Database {
-  return new S3Database(makeDbConfig(tableName), { logger, config: makeDbConfig(tableName) });
+  return new S3Database(makeDbConfig(tableName), {logger, config: makeDbConfig(tableName)});
 }
 
 function cbToPromise<T = any>(fn: (cb: (...args: any[]) => void) => void): Promise<T[]> {
@@ -58,19 +58,21 @@ describe('S3Database', () => {
   for (const tableName of ['verdaccio-table', 'none']) {
     describe('constructor', () => {
       test('throws when config is falsy', () => {
-        expect(() => new S3Database(null as any, { logger, config: {} as any })).toThrow(
+        expect(() => new S3Database(null as any, {logger, config: {} as any})).toThrow(
           's3 storage missing config'
         );
       });
 
       test('throws when bucket is missing', () => {
-        const config = { store: { 'aws-s3-storage': { dynamoTableName: 'tbl' } } } as unknown as Config;
-        expect(() => new S3Database(config, { logger, config })).toThrow('requires a bucket');
+        const config = {store: {'aws-s3-storage': {dynamoTableName: 'tbl'}}} as unknown as Config;
+        expect(() => new S3Database(config, {logger, config})).toThrow('requires a bucket');
       });
 
       test('throws when dynamoTableName is missing', () => {
-        const config = { store: { 'aws-s3-storage': { bucket: 'b' } } } as unknown as Config;
-        expect(() => new S3Database(config, { logger, config })).toThrow('requires a dynamoTableName');
+        const config = {store: {'aws-s3-storage': {bucket: 'b'}}} as unknown as Config;
+        expect(() => new S3Database(config, {logger, config})).toThrow(
+          'requires a dynamoTableName'
+        );
       });
 
       test(`creates instance with valid config - dynamo`, () => {
@@ -82,14 +84,14 @@ describe('S3Database', () => {
 
     describe('getSecret', () => {
       test('returns secret from DynamoDB', async () => {
-        dynamoSendSpy.mockResolvedValue({ Item: { secret: 'my-secret' } });
+        dynamoSendSpy.mockResolvedValue({Item: {secret: 'my-secret'}});
         const db = createDb(tableName);
         const secret = await db.getSecret();
         expect(secret).toBe('my-secret');
 
         const cmd = dynamoSendSpy.mock.calls[0][0];
         expect(cmd).toBeInstanceOf(GetCommand);
-        expect(cmd.input.Key).toEqual({ pk: 'CONFIG', sk: 'SECRET' });
+        expect(cmd.input.Key).toEqual({pk: 'CONFIG', sk: 'SECRET'});
       });
 
       test('returns empty string when no secret exists', async () => {
@@ -113,7 +115,7 @@ describe('S3Database', () => {
 
         const cmd = dynamoSendSpy.mock.calls[0][0];
         expect(cmd).toBeInstanceOf(PutCommand);
-        expect(cmd.input.Item).toEqual({ pk: 'CONFIG', sk: 'SECRET', secret: 'new-secret' });
+        expect(cmd.input.Item).toEqual({pk: 'CONFIG', sk: 'SECRET', secret: 'new-secret'});
       });
     });
 
@@ -126,7 +128,7 @@ describe('S3Database', () => {
         expect(err).toBeNull();
         const cmd = dynamoSendSpy.mock.calls[0][0];
         expect(cmd).toBeInstanceOf(PutCommand);
-        expect(cmd.input.Item).toEqual({ pk: 'PACKAGE', sk: 'jquery', name: 'jquery' });
+        expect(cmd.input.Item).toEqual({pk: 'PACKAGE', sk: 'jquery', name: 'jquery'});
       });
 
       test('forwards dynamo errors', async () => {
@@ -148,14 +150,14 @@ describe('S3Database', () => {
         expect(err).toBeNull();
         const cmd = dynamoSendSpy.mock.calls[0][0];
         expect(cmd).toBeInstanceOf(DeleteCommand);
-        expect(cmd.input.Key).toEqual({ pk: 'PACKAGE', sk: 'jquery' });
+        expect(cmd.input.Key).toEqual({pk: 'PACKAGE', sk: 'jquery'});
       });
     });
 
     describe('get', () => {
       test('queries all packages from DynamoDB', async () => {
         dynamoSendSpy.mockResolvedValue({
-          Items: [{ sk: 'jquery' }, { sk: 'lodash' }, { sk: 'express' }],
+          Items: [{sk: 'jquery'}, {sk: 'lodash'}, {sk: 'express'}],
         });
         const db = createDb(tableName);
 
@@ -165,11 +167,11 @@ describe('S3Database', () => {
 
         const cmd = dynamoSendSpy.mock.calls[0][0];
         expect(cmd).toBeInstanceOf(QueryCommand);
-        expect(cmd.input.ExpressionAttributeValues).toEqual({ ':pk': 'PACKAGE' });
+        expect(cmd.input.ExpressionAttributeValues).toEqual({':pk': 'PACKAGE'});
       });
 
       test('returns empty list when no packages', async () => {
-        dynamoSendSpy.mockResolvedValue({ Items: [] });
+        dynamoSendSpy.mockResolvedValue({Items: []});
         const db = createDb(tableName);
 
         const [err, data] = await cbToPromise((cb) => db.get(cb));
@@ -195,7 +197,7 @@ describe('S3Database', () => {
 
       test('filterByQuery returns results as-is', async () => {
         const db = createDb(tableName);
-        const input = [{ package: { name: 'test' } }] as any;
+        const input = [{package: {name: 'test'}}] as any;
         const results = await db.filterByQuery(input, {} as any);
         expect(results).toBe(input);
       });
@@ -236,33 +238,33 @@ describe('S3Database', () => {
 
         const cmd = dynamoSendSpy.mock.calls[0][0];
         expect(cmd).toBeInstanceOf(DeleteCommand);
-        expect(cmd.input.Key).toEqual({ pk: 'TOKEN#admin', sk: 'tok-123' });
+        expect(cmd.input.Key).toEqual({pk: 'TOKEN#admin', sk: 'tok-123'});
       });
 
       test('readTokens queries tokens for a user', async () => {
         dynamoSendSpy.mockResolvedValue({
           Items: [
-            { user: 'admin', sk: 'tok-1', token: 'jwt-1', readonly: false, created: '2025-01-01' },
-            { user: 'admin', sk: 'tok-2', token: 'jwt-2', readonly: true, created: '2025-02-01' },
+            {user: 'admin', sk: 'tok-1', token: 'jwt-1', readonly: false, created: '2025-01-01'},
+            {user: 'admin', sk: 'tok-2', token: 'jwt-2', readonly: true, created: '2025-02-01'},
           ],
         });
         const db = createDb(tableName);
 
-        const tokens = await db.readTokens({ user: 'admin' });
+        const tokens = await db.readTokens({user: 'admin'});
         expect(tokens).toHaveLength(2);
         expect(tokens[0].key).toBe('tok-1');
         expect(tokens[1].readonly).toBe(true);
 
         const cmd = dynamoSendSpy.mock.calls[0][0];
         expect(cmd).toBeInstanceOf(QueryCommand);
-        expect(cmd.input.ExpressionAttributeValues).toEqual({ ':pk': 'TOKEN#admin' });
+        expect(cmd.input.ExpressionAttributeValues).toEqual({':pk': 'TOKEN#admin'});
       });
 
       test('readTokens returns empty array when no tokens', async () => {
-        dynamoSendSpy.mockResolvedValue({ Items: [] });
+        dynamoSendSpy.mockResolvedValue({Items: []});
         const db = createDb(tableName);
 
-        const tokens = await db.readTokens({ user: 'nobody' });
+        const tokens = await db.readTokens({user: 'nobody'});
         expect(tokens).toEqual([]);
       });
     });

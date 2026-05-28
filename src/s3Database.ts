@@ -1,12 +1,12 @@
-import type { S3Client } from '@aws-sdk/client-s3';
+import type {S3Client} from '@aws-sdk/client-s3';
 import debugCore from 'debug';
 
-import type { searchUtils } from '@verdaccio/core';
-import type { Callback, Config, Logger, Token, TokenFilter } from '@verdaccio/types';
+import type {searchUtils} from '@verdaccio/core';
+import type {Callback, Config, Logger, Token, TokenFilter} from '@verdaccio/types';
 
-import type { S3Config } from '../types';
+import type {S3Config} from '../types';
 import addTrailingSlash from './addTrailingSlash';
-import { createS3Client } from './s3Client';
+import {createS3Client} from './s3Client';
 import S3DatabaseBucket from './s3DatabaseBucket';
 import S3DatabaseDynamo from './s3DatabaseDynamo';
 import S3PackageManager from './s3PackageManager';
@@ -20,7 +20,7 @@ export default class S3Database {
   private s3: S3Client;
   private database: S3DatabaseBucket | S3DatabaseDynamo;
 
-  public constructor(config: Config, options: { logger: Logger; config: Config }) {
+  public constructor(config: Config, options: {logger: Logger; config: Config}) {
     this.logger = options.logger;
     if (!config) {
       throw new Error('s3 storage missing config. Add `store.s3-storage` to your config file');
@@ -72,7 +72,7 @@ export default class S3Database {
     this.s3 = createS3Client(this.config);
 
     if (this.config.dynamoTableName === 'none') {
-      this.database = new S3DatabaseBucket(this.config, this.logger, this.s3)
+      this.database = new S3DatabaseBucket(this.config, this.logger, this.s3);
     } else {
       this.database = new S3DatabaseDynamo(this.config, this.logger, this.s3);
     }
@@ -132,7 +132,7 @@ export default class S3Database {
   public getPackageStorage(packageName: string): S3PackageManager {
     debug('getPackageStorage package=%o bucket=%o', packageName, this.config.bucket);
     this.logger.trace(
-      { packageName, bucket: this.config.bucket },
+      {packageName, bucket: this.config.bucket},
       'aws-s3-storage: [getPackageStorage] creating storage for package=@{packageName} bucket=@{bucket}'
     );
     return new S3PackageManager(this.config, packageName, this.logger, this.s3);

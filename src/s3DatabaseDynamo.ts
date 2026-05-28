@@ -1,12 +1,12 @@
-import { DeleteCommand, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import type { S3Client } from '@aws-sdk/client-s3';
+import {DeleteCommand, GetCommand, PutCommand, QueryCommand} from '@aws-sdk/lib-dynamodb';
+import type {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb';
+import type {S3Client} from '@aws-sdk/client-s3';
 import debugCore from 'debug';
 
-import type { Callback, Logger, Token, TokenFilter } from '@verdaccio/types';
+import type {Callback, Logger, Token, TokenFilter} from '@verdaccio/types';
 
-import type { S3Config } from '../types';
-import { createDynamoClient } from './dynamoClient';
+import type {S3Config} from '../types';
+import {createDynamoClient} from './dynamoClient';
 
 const debug = debugCore('verdaccio:plugin:aws-s3-storage:database:dynamo');
 
@@ -38,23 +38,23 @@ export default class S3DatabaseDynamo {
   public async getSecret(): Promise<string> {
     debug('getSecret from table=%o', this.tableName);
     this.logger.trace(
-      { table: this.tableName },
+      {table: this.tableName},
       'aws-s3-storage: [getSecret] reading from table=@{table}'
     );
     try {
       const result = await this.dynamo.send(
         new GetCommand({
           TableName: this.tableName,
-          Key: { pk: 'CONFIG', sk: 'SECRET' },
+          Key: {pk: 'CONFIG', sk: 'SECRET'},
         })
       );
       const hasSecret = !!result.Item?.secret;
       debug('getSecret found=%o', hasSecret);
-      this.logger.trace({ found: hasSecret }, 'aws-s3-storage: [getSecret] found=@{found}');
+      this.logger.trace({found: hasSecret}, 'aws-s3-storage: [getSecret] found=@{found}');
       return result.Item?.secret ?? '';
     } catch (err) {
       debug('getSecret failed: %o', err);
-      this.logger.trace({ err }, 'aws-s3-storage: [getSecret] error, returning empty secret');
+      this.logger.trace({err}, 'aws-s3-storage: [getSecret] error, returning empty secret');
       return '';
     }
   }
@@ -62,13 +62,13 @@ export default class S3DatabaseDynamo {
   public async setSecret(secret: string): Promise<void> {
     debug('setSecret table=%o', this.tableName);
     this.logger.trace(
-      { table: this.tableName },
+      {table: this.tableName},
       'aws-s3-storage: [setSecret] writing to table=@{table}'
     );
     await this.dynamo.send(
       new PutCommand({
         TableName: this.tableName,
-        Item: { pk: 'CONFIG', sk: 'SECRET', secret },
+        Item: {pk: 'CONFIG', sk: 'SECRET', secret},
       })
     );
     debug('setSecret stored successfully');
@@ -78,7 +78,7 @@ export default class S3DatabaseDynamo {
   public add(name: string, callback: Callback): void {
     debug('add package=%o table=%o', name, this.tableName);
     this.logger.trace(
-      { name, table: this.tableName },
+      {name, table: this.tableName},
       'aws-s3-storage: [add] adding package=@{name} to table=@{table}'
     );
     void (async (): Promise<void> => {
@@ -86,15 +86,15 @@ export default class S3DatabaseDynamo {
         await this.dynamo.send(
           new PutCommand({
             TableName: this.tableName,
-            Item: { pk: 'PACKAGE', sk: name, name },
+            Item: {pk: 'PACKAGE', sk: name, name},
           })
         );
         debug('add package=%o success', name);
-        this.logger.trace({ name }, 'aws-s3-storage: [add] package=@{name} added successfully');
+        this.logger.trace({name}, 'aws-s3-storage: [add] package=@{name} added successfully');
         callback(null);
       } catch (err) {
         debug('add package=%o failed: %o', name, err);
-        this.logger.trace({ name, err }, 'aws-s3-storage: [add] package=@{name} failed');
+        this.logger.trace({name, err}, 'aws-s3-storage: [add] package=@{name} failed');
         callback(err);
       }
     })();
@@ -103,7 +103,7 @@ export default class S3DatabaseDynamo {
   public remove(name: string, callback: Callback): void {
     debug('remove package=%o table=%o', name, this.tableName);
     this.logger.trace(
-      { name, table: this.tableName },
+      {name, table: this.tableName},
       'aws-s3-storage: [remove] removing package=@{name} from table=@{table}'
     );
     void (async (): Promise<void> => {
@@ -111,15 +111,15 @@ export default class S3DatabaseDynamo {
         await this.dynamo.send(
           new DeleteCommand({
             TableName: this.tableName,
-            Key: { pk: 'PACKAGE', sk: name },
+            Key: {pk: 'PACKAGE', sk: name},
           })
         );
         debug('remove package=%o success', name);
-        this.logger.trace({ name }, 'aws-s3-storage: [remove] package=@{name} removed successfully');
+        this.logger.trace({name}, 'aws-s3-storage: [remove] package=@{name} removed successfully');
         callback(null);
       } catch (err) {
         debug('remove package=%o failed: %o', name, err);
-        this.logger.trace({ name, err }, 'aws-s3-storage: [remove] package=@{name} failed');
+        this.logger.trace({name, err}, 'aws-s3-storage: [remove] package=@{name} failed');
         callback(err);
       }
     })();
@@ -128,7 +128,7 @@ export default class S3DatabaseDynamo {
   public get(callback: Callback): void {
     debug('get all packages from table=%o', this.tableName);
     this.logger.trace(
-      { table: this.tableName },
+      {table: this.tableName},
       'aws-s3-storage: [get] querying all packages from table=@{table}'
     );
     void (async (): Promise<void> => {
@@ -137,16 +137,16 @@ export default class S3DatabaseDynamo {
           new QueryCommand({
             TableName: this.tableName,
             KeyConditionExpression: 'pk = :pk',
-            ExpressionAttributeValues: { ':pk': 'PACKAGE' },
+            ExpressionAttributeValues: {':pk': 'PACKAGE'},
           })
         );
         const list = (result.Items || []).map((item) => item.sk as string);
         debug('get packages count=%d', list.length);
-        this.logger.trace({ count: list.length }, 'aws-s3-storage: [get] found @{count} packages');
+        this.logger.trace({count: list.length}, 'aws-s3-storage: [get] found @{count} packages');
         callback(null, list);
       } catch (err) {
         debug('get packages failed: %o', err);
-        this.logger.trace({ err }, 'aws-s3-storage: [get] query failed');
+        this.logger.trace({err}, 'aws-s3-storage: [get] query failed');
         callback(err);
       }
     })();
@@ -170,7 +170,7 @@ export default class S3DatabaseDynamo {
             new QueryCommand({
               TableName: this.tableName,
               KeyConditionExpression: 'pk = :pk',
-              ExpressionAttributeValues: { ':pk': 'PACKAGE' },
+              ExpressionAttributeValues: {':pk': 'PACKAGE'},
             })
           );
           const items = result.Items || [];
@@ -190,7 +190,7 @@ export default class S3DatabaseDynamo {
           onEnd();
         } catch (err) {
           debug('search error: %o', err);
-          this.logger.trace({ err }, 'aws-s3-storage: [search] error during iteration');
+          this.logger.trace({err}, 'aws-s3-storage: [search] error during iteration');
           onEnd();
         }
       })();
@@ -206,7 +206,7 @@ export default class S3DatabaseDynamo {
   public async saveToken(token: Token): Promise<void> {
     debug('saveToken user=%o key=%o table=%o', token.user, token.key, this.tableName);
     this.logger.trace(
-      { user: token.user, tokenKey: token.key, table: this.tableName },
+      {user: token.user, tokenKey: token.key, table: this.tableName},
       'aws-s3-storage: [saveToken] saving token for user=@{user} key=@{tokenKey}'
     );
     await this.dynamo.send(
@@ -225,7 +225,7 @@ export default class S3DatabaseDynamo {
     );
     debug('saveToken user=%o key=%o stored', token.user, token.key);
     this.logger.trace(
-      { user: token.user, tokenKey: token.key },
+      {user: token.user, tokenKey: token.key},
       'aws-s3-storage: [saveToken] stored user=@{user} key=@{tokenKey}'
     );
   }
@@ -233,18 +233,18 @@ export default class S3DatabaseDynamo {
   public async deleteToken(user: string, tokenKey: string): Promise<void> {
     debug('deleteToken user=%o key=%o table=%o', user, tokenKey, this.tableName);
     this.logger.trace(
-      { user, tokenKey, table: this.tableName },
+      {user, tokenKey, table: this.tableName},
       'aws-s3-storage: [deleteToken] deleting token user=@{user} key=@{tokenKey}'
     );
     await this.dynamo.send(
       new DeleteCommand({
         TableName: this.tableName,
-        Key: { pk: `TOKEN#${user}`, sk: tokenKey },
+        Key: {pk: `TOKEN#${user}`, sk: tokenKey},
       })
     );
     debug('deleteToken user=%o key=%o deleted', user, tokenKey);
     this.logger.trace(
-      { user, tokenKey },
+      {user, tokenKey},
       'aws-s3-storage: [deleteToken] deleted user=@{user} key=@{tokenKey}'
     );
   }
@@ -252,14 +252,14 @@ export default class S3DatabaseDynamo {
   public async readTokens(filter: TokenFilter): Promise<Token[]> {
     debug('readTokens user=%o table=%o', filter.user, this.tableName);
     this.logger.trace(
-      { user: filter.user, table: this.tableName },
+      {user: filter.user, table: this.tableName},
       'aws-s3-storage: [readTokens] querying tokens for user=@{user}'
     );
     const result = await this.dynamo.send(
       new QueryCommand({
         TableName: this.tableName,
         KeyConditionExpression: 'pk = :pk',
-        ExpressionAttributeValues: { ':pk': `TOKEN#${filter.user}` },
+        ExpressionAttributeValues: {':pk': `TOKEN#${filter.user}`},
       })
     );
 
@@ -272,7 +272,7 @@ export default class S3DatabaseDynamo {
     }));
     debug('readTokens user=%o found=%d', filter.user, tokens.length);
     this.logger.trace(
-      { user: filter.user, count: tokens.length },
+      {user: filter.user, count: tokens.length},
       'aws-s3-storage: [readTokens] found @{count} tokens for user=@{user}'
     );
     return tokens;
