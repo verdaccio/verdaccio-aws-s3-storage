@@ -1,5 +1,11 @@
 # verdaccio-aws-s3-storage
 
+## 12.1.0
+
+### Minor Changes
+
+- a311a32: feat: use S3 for registry DB (alternative to DynamoDB)
+
 ## 12.0.4
 
 ### Patch Changes
