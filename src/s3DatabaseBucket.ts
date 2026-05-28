@@ -56,8 +56,13 @@ export default class S3DatabaseBucket {
 
   // List of Packages
 
-  public get(): string[] {
-    return this._localData.list;
+  public get(callback?: Callback): string[] | void {
+    const list = this._localData.list;
+    if (typeof callback === 'function') {
+      callback(null, list);
+      return;
+    }
+    return list;
   }
 
   public add(name: string, callback: Callback): void {
@@ -96,7 +101,7 @@ export default class S3DatabaseBucket {
       this.logger.trace('aws-s3-storage: [search] callback pattern, iterating packages');
       void (async (): Promise<void> => {
         try {
-          const list = this.get();
+          const list = this._localData.list;
           debug('search: found %d packages', list.length);
           for (const item of list) {
             await new Promise<void>((resolve): void => {
