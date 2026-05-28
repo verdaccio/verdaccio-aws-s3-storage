@@ -1,10 +1,10 @@
-import { GetObjectCommand, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
-import type { S3Client } from '@aws-sdk/client-s3';
+import {GetObjectCommand, PutObjectCommand, HeadObjectCommand} from '@aws-sdk/client-s3';
+import type {S3Client} from '@aws-sdk/client-s3';
 import debugCore from 'debug';
 
-import type { Callback, Logger, Token, TokenFilter } from '@verdaccio/types';
+import type {Callback, Logger, Token, TokenFilter} from '@verdaccio/types';
 
-import type { S3Config } from '../types';
+import type {S3Config} from '../types';
 
 const debug = debugCore('verdaccio:plugin:aws-s3-storage:database:bucket');
 
@@ -27,7 +27,7 @@ export default class S3DatabaseBucket {
     this.config = config;
     this.s3 = s3;
 
-    this._localData = { secret: '', list: [], tokens: [] };
+    this._localData = {secret: '', list: [], tokens: []};
   }
 
   public async init(): Promise<void> {
@@ -61,32 +61,32 @@ export default class S3DatabaseBucket {
   }
 
   public add(name: string, callback: Callback): void {
-    this.logger.debug({ name }, 's3: [add] private package @{name}');
+    this.logger.debug({name}, 's3: [add] private package @{name}');
     if (this._localData.list.includes(name)) {
       callback(null);
       return;
     }
     this._localData.list.push(name);
-    this.logger.trace({ name }, 's3: [add] @{name} has been added');
+    this.logger.trace({name}, 's3: [add] @{name} has been added');
     this._putData(callback);
   }
 
   public remove(name: string, callback: Callback): void {
-    this.logger.debug({ name }, 's3: [remove] private package @{name}');
+    this.logger.debug({name}, 's3: [remove] private package @{name}');
     if (!this._localData.list.includes(name)) {
       callback(null);
       return;
     }
-    this._localData.list = this._localData.list.filter(pkg => pkg !== name);
-    this.logger.trace({ name }, 's3: [remove] @{name} has been removed');
+    this._localData.list = this._localData.list.filter((pkg) => pkg !== name);
+    this.logger.trace({name}, 's3: [remove] @{name} has been removed');
     this._putData(callback);
   }
 
   /**
- * Search packages. Verdaccio 6/7 calls this with callback pattern: search(onPackage, onEnd).
- * Newer versions may call with search(query): Promise<SearchItem[]>.
- * We support both signatures.
- */
+   * Search packages. Verdaccio 6/7 calls this with callback pattern: search(onPackage, onEnd).
+   * Newer versions may call with search(query): Promise<SearchItem[]>.
+   * We support both signatures.
+   */
   public search(...args: any[]): any {
     // Callback pattern: search(onPackage, onEnd)
     if (typeof args[0] === 'function') {
@@ -113,7 +113,7 @@ export default class S3DatabaseBucket {
           onEnd();
         } catch (err) {
           debug('search error: %o', err);
-          this.logger.trace({ err }, 'aws-s3-storage: [search] error during iteration');
+          this.logger.trace({err}, 'aws-s3-storage: [search] error during iteration');
           onEnd();
         }
       })();
@@ -129,7 +129,7 @@ export default class S3DatabaseBucket {
   // Token management
 
   public async saveToken(token: Token): Promise<void> {
-    if (this._localData.tokens.some(t => t.user === token.user && t.key === token.key)) {
+    if (this._localData.tokens.some((t) => t.user === token.user && t.key === token.key)) {
       throw new Error('Token already exists');
     }
     this._localData.tokens.push(token);
@@ -137,12 +137,14 @@ export default class S3DatabaseBucket {
   }
 
   public async deleteToken(user: string, tokenKey: string): Promise<void> {
-    this._localData.tokens = this._localData.tokens.filter(token => token.user !== user || token.key !== tokenKey);
+    this._localData.tokens = this._localData.tokens.filter(
+      (token) => token.user !== user || token.key !== tokenKey
+    );
     this._putData();
   }
 
   public async readTokens(filter: TokenFilter): Promise<Token[]> {
-    return this._localData.tokens.filter(token => token.user === filter.user);
+    return this._localData.tokens.filter((token) => token.user === filter.user);
   }
 
   // Bucket operations
@@ -151,7 +153,7 @@ export default class S3DatabaseBucket {
     const key = `${this.config.keyPrefix}${LOCAL_STORAGE_KEY}`;
     debug('createData bucket=%o key=%o', this.config.bucket, key);
     this.logger.trace(
-      { bucket: this.config.bucket, key },
+      {bucket: this.config.bucket, key},
       'aws-s3-storage: [_createData] creating bucket=@{bucket} key=@{key}'
     );
     void (async (): Promise<void> => {
@@ -164,13 +166,13 @@ export default class S3DatabaseBucket {
         );
         debug('createData bucket=%o key=%o created', this.config.bucket, key);
         this.logger.trace(
-          { bucket: this.config.bucket, key },
+          {bucket: this.config.bucket, key},
           'aws-s3-storage: [_createData] created bucket=@{bucket} key=@{key}'
         );
       } catch (err: any) {
         debug('_createData failed: %o', err.message);
         this.logger.trace(
-          { error: err.message },
+          {error: err.message},
           'aws-s3-storage: [_createData] write failed: @{error}'
         );
         throw err;
@@ -182,7 +184,7 @@ export default class S3DatabaseBucket {
     const key = `${this.config.keyPrefix}${LOCAL_STORAGE_KEY}`;
     debug('_getData bucket=%o key=%o', this.config.bucket, key);
     this.logger.trace(
-      { bucket: this.config.bucket, key },
+      {bucket: this.config.bucket, key},
       'aws-s3-storage: [_getData] fetching bucket=@{bucket} key=@{key}'
     );
     const response = await this.s3.send(
@@ -195,20 +197,16 @@ export default class S3DatabaseBucket {
     const bodyStr = (await response.Body?.transformToString()) ?? '';
     try {
       const data = JSON.parse(bodyStr);
-      debug(
-        '_getData loaded package=%o count=%d',
-        data.name,
-        data.list.length
-      );
+      debug('_getData loaded package=%o count=%d', data.name, data.list.length);
       this.logger.trace(
-        { packageName: data.name, count: data.list.length },
+        {packageName: data.name, count: data.list.length},
         'aws-s3-storage: [_getData] loaded package=@{packageName} with @{count} packages'
       );
       return data;
     } catch (err: any) {
       debug('_getData JSON parse error for key=%o bodyLength=%d', key, bodyStr.length);
       this.logger.trace(
-        { key, bodyLength: bodyStr.length },
+        {key, bodyLength: bodyStr.length},
         'aws-s3-storage: [_getData] JSON parse error key=@{key} bodyLength=@{bodyLength}'
       );
       throw err;
@@ -219,7 +217,7 @@ export default class S3DatabaseBucket {
     const key = `${this.config.keyPrefix}${LOCAL_STORAGE_KEY}`;
     debug('_putData bucket=%o key=%o', this.config.bucket, key);
     this.logger.trace(
-      { bucket: this.config.bucket, key },
+      {bucket: this.config.bucket, key},
       'aws-s3-storage: [_putData] writing bucket=@{bucket} key=@{key}'
     );
     const data = this._localData;
@@ -233,15 +231,12 @@ export default class S3DatabaseBucket {
           })
         );
         debug('_putData bucket=%o key=%o saved', this.config.bucket, key);
-        this.logger.trace(
-          { key },
-          'aws-s3-storage: [_putData] written to key=@{key}'
-        );
+        this.logger.trace({key}, 'aws-s3-storage: [_putData] written to key=@{key}');
         if (callback) callback(null);
       } catch (err: any) {
         debug('_putData failed: %o', err.message);
         this.logger.trace(
-          { error: err.message },
+          {error: err.message},
           'aws-s3-storage: [_putData] write failed: @{error}'
         );
         if (callback) callback(err);
