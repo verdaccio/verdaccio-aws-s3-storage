@@ -2,7 +2,9 @@
 
 AWS S3 + DynamoDB storage plugin for [Verdaccio](https://verdaccio.org).
 
-Uses **S3** for package tarballs and metadata, and **DynamoDB** for the registry database (package list, secrets, tokens).
+Uses **S3** for package tarballs and metadata, and **DynamoDB** for the registry database (package list, secrets, tokens). 
+
+For AWS-compatible S3 that do not include DynamoDB, you can use **S3** for the registry data as well (as in older versions of the plugin).
 
 Built with AWS SDK for JavaScript v3.
 
@@ -11,7 +13,7 @@ Built with AWS SDK for JavaScript v3.
 - **Node.js** >= 24
 - **Verdaccio** >= 7.x
 - **AWS S3 Bucket** — stores package tarballs and `package.json` metadata
-- **AWS DynamoDB Table** — stores the registry state (package list, secret, auth tokens)
+- **AWS DynamoDB Table (optional)** — stores the registry state (package list, secret, auth tokens)
   - Partition key: `pk` (String)
   - Sort key: `sk` (String)
   - Billing mode: PAY_PER_REQUEST (recommended) or provisioned
@@ -61,10 +63,12 @@ store:
     sessionToken: your-token # optional
     proxy: https://your-proxy # optional
 
-    # DynamoDB (required)
+    # DynamoDB 
     dynamoTableName: verdaccio-registry
     dynamoEndpoint: https://dynamodb.us-east-1.amazonaws.com # optional
     dynamoRegion: us-east-1 # optional, defaults to 'region'
+    # or
+    dynamoTableName: none
 ```
 
 ### Environment variable substitution
@@ -101,11 +105,11 @@ The following environment variables are used by the Docker image and the plugin 
 
 #### DynamoDB
 
-| Variable                | Required | Description                                                              |
-| ----------------------- | -------- | ------------------------------------------------------------------------ |
-| `AWS_DYNAMO_TABLE_NAME` | Yes      | DynamoDB table name (must have `pk`/`sk` key schema)                     |
-| `AWS_DYNAMO_ENDPOINT`   | No       | Custom DynamoDB endpoint URL. Required for LocalStack. Omit for real AWS |
-| `AWS_DYNAMO_REGION`     | No       | AWS region for DynamoDB. Falls back to `AWS_DEFAULT_REGION`              |
+| Variable                | Required | Description                                                                                       |
+| ----------------------- | -------- | ------------------------------------------------------------------------------------------------- |
+| `AWS_DYNAMO_TABLE_NAME` | Yes      | DynamoDB table name (must have `pk`/`sk` key schema). Set to 'none' to use S3 instead of DynamoDB |
+| `AWS_DYNAMO_ENDPOINT`   | No       | Custom DynamoDB endpoint URL. Required for LocalStack. Omit for real AWS                          |
+| `AWS_DYNAMO_REGION`     | No       | AWS region for DynamoDB. Falls back to `AWS_DEFAULT_REGION`                                       |
 
 #### Authentication
 
@@ -123,7 +127,8 @@ The following environment variables are used by the Docker image and the plugin 
 
 Available debug namespaces:
 
-- `verdaccio:plugin:aws-s3-storage:database` — DynamoDB operations (add, remove, get, tokens, secret)
+- `verdaccio:plugin:aws-s3-storage:database:dynamo` — DynamoDB operations (add, remove, get, tokens, secret)
+- `verdaccio:plugin:aws-s3-storage:database:bucket` — S3 registry operations (add, remove, get, tokens, secret)
 - `verdaccio:plugin:aws-s3-storage:package` — S3 package operations (read, write, create, delete, tarballs)
 - `verdaccio:plugin:aws-s3-storage:s3-client` — S3 client initialization
 - `verdaccio:plugin:aws-s3-storage:dynamo-client` — DynamoDB client initialization
@@ -159,7 +164,7 @@ Set `tarballACL: public-read` to grant anonymous read access for CDN integration
                          |
             +------------+------------+
             |                         |
-      S3Database               S3PackageManager
+      S3DatabaseDynamo         S3PackageManager
       (registry state)         (per-package storage)
             |                         |
        DynamoDB                      S3
@@ -170,7 +175,26 @@ Set `tarballACL: public-read` to grant anonymous read access for CDN integration
    +-----------------+
 ```
 
-**S3Database** handles registry operations via DynamoDB:
+or 
+
+```
+                   +-----------+
+                   | Verdaccio |
+                   +-----+-----+
+                         |
+            +------------+------------+
+            |                         |
+      S3DatabaseBucket         S3PackageManager
+      (registry state)         (per-package storage)
+            |                         |
+           S3                        S3
+   +---------------------+  +------------------+
+   | verdaccio-s3-db.json|  | pkg/package.json |
+   +---------------------+  | pkg/tarball.tgz  |
+                            +------------------+
+```
+
+**S3Database** handles registry operations via DynamoDB or S3:
 
 - Package list (`add`, `remove`, `get`)
 - Secret management (`getSecret`, `setSecret`)
