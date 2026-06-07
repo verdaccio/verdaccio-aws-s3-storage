@@ -8,6 +8,8 @@ minimumReleaseAgeExclude:
   - '@verdaccio/*'
   - '@verdaccio-scope/*'
   - 'verdaccio-*'
+  # Renovate security update: vite@8.0.5
+  - vite@8.0.5
 saveExact: true
 ignoreScripts: true
 preferFrozenLockfile: true
