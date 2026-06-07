@@ -1,5 +1,11 @@
 # verdaccio-aws-s3-storage
 
+## 12.1.1
+
+### Patch Changes
+
+- a73a893: chore: force release with env
+
 ## 12.1.0
 
 ### Minor Changes
