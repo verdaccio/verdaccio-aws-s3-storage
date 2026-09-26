@@ -336,6 +336,40 @@ describe('S3PackageManager', () => {
       });
       expect(opened).toBe(true);
     });
+
+    test('failed upload without done() does not produce an unhandledRejection', async () => {
+      // Head 404 lets the upload start; every other command fails, so upload.done() rejects.
+      const s3 = createFakeS3((cmd) => {
+        if (cmd instanceof HeadObjectCommand) throw s3Error('NotFound', 404);
+        throw s3Error('RequestAbortedError', 500);
+      });
+
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown): void => {
+        unhandled.push(reason);
+      };
+      process.on('unhandledRejection', onUnhandled);
+
+      try {
+        const pm = new S3PackageManager(makeConfig(), 'my-pkg', logger, s3);
+        const stream = pm.writeTarball('aborted.tgz');
+
+        // An aborted client never calls stream.done(), so nothing awaits the upload.
+        await new Promise<void>((resolve) => {
+          stream.on('error', () => resolve());
+          stream.on('open', () => {
+            stream.write(Buffer.from('x'));
+            stream.end();
+          });
+        });
+        // Give Node a full turn to report an unhandled rejection, if there is one.
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      } finally {
+        process.off('unhandledRejection', onUnhandled);
+      }
+
+      expect(unhandled).toEqual([]);
+    });
   });
 
   describe('packagePath with custom storage', () => {

@@ -382,6 +382,9 @@ export default class S3PackageManager {
           throw error;
         });
 
+        // An aborted client never calls done(), so nothing would await this rejection.
+        void uploadPromise.catch(() => {});
+
         uploadStream.emit('open');
         this.logger.trace({name}, 'aws-s3-storage: [writeTarball] emitted open for name=@{name}');
 
