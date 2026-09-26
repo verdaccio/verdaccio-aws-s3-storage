@@ -2,6 +2,9 @@ storage: /verdaccio/storage
 
 plugins: /verdaccio/plugins
 
+# the e2e battery publishes tarballs larger than the 10mb default
+max_body_size: 100mb
+
 store:
   aws-s3-storage:
     bucket: AWS_S3_BUCKET
@@ -22,21 +25,17 @@ userRateLimit:
   windowMs: 1000
   max: 10000
 
-uplinks:
-  npmjs:
-    url: https://registry.npmjs.org/
-
+# no uplink on purpose: the e2e battery only ever uses packages it publishes itself, and
+# proxying to npmjs turns every lookup into a network round trip
 packages:
   '@*/*':
     access: $all
     publish: $anonymous $authenticated
     unpublish: $anonymous $authenticated
-    proxy: npmjs
   '**':
     access: $all
     publish: $anonymous $authenticated
     unpublish: $anonymous $authenticated
-    proxy: npmjs
 
 log:
   - {type: stdout, format: pretty, level: trace}
