@@ -1,5 +1,21 @@
 # verdaccio-aws-s3-storage
 
+## 12.1.2
+
+### Patch Changes
+
+- 602a16d: Prevent an aborted tarball upload from crashing the registry process.
+
+  `writeTarball` only awaits the upload promise inside `onEnd()`, which runs on the
+  stream's `end` event. A client that aborts mid-upload never triggers it, so the
+  rejection from `upload.done()` reached the process as an `unhandledRejection` and
+  took the whole registry down. The rejection is now always consumed; the error is
+  still delivered to the stream via `emit('error')`.
+
+- 19c0dbb: Update runtime dependencies: `@verdaccio/core` and `@verdaccio/config` to
+  `9.0.0-next-9.32`, and the AWS SDK v3 packages to `3.1097.0`. These are external
+  imports in the published bundle, so a release is needed for consumers to pick them up.
+
 ## 12.1.1
 
 ### Patch Changes
