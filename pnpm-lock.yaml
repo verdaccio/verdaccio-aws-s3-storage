@@ -56,10 +56,10 @@ importers:
         version: 25.5.0
       '@verdaccio/e2e-cli':
         specifier: 3.2.1
-        version: 3.2.1
+        version: 3.2.1(supports-color@8.1.1)
       '@verdaccio/e2e-ui':
-        specifier: ^2.3.0
-        version: 2.4.1(cypress@15.13.1)
+        specifier: 2.7.0
+        version: 2.7.0(cypress@15.13.1)
       '@verdaccio/eslint-config':
         specifier: 12.0.0
         version: 12.0.0(@typescript-eslint/eslint-plugin@8.58.1(@typescript-eslint/parser@8.58.1(eslint@10.2.0(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint@10.2.0(supports-color@8.1.1))(typescript@5.9.3))(@typescript-eslint/utils@8.58.1(eslint@10.2.0(supports-color@8.1.1))(typescript@5.9.3))(eslint@10.2.0(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3)(vitest@4.1.3(@types/node@25.5.0)(vite@8.0.5(@types/node@25.5.0)))
@@ -76,7 +76,7 @@ importers:
         specifier: 7.0.3
         version: 7.0.3
       cypress:
-        specifier: ^15.13.1
+        specifier: 15.13.1
         version: 15.13.1
       eslint:
         specifier: 10.2.0
@@ -954,8 +954,8 @@ packages:
     resolution: {integrity: sha512-nHR1EHy8drB7T0RQNAVoo73tWjRyAxSw9DRPXjYwll394S7eqTFOW6XFRwD67uTn6T4f38kq4tNx9M42winAYQ==}
     hasBin: true
 
-  '@verdaccio/e2e-ui@2.4.1':
-    resolution: {integrity: sha512-lTL/NFbFsjUcZ+fLHLOfnSsrXdj3IBkPm+SCt5+5UMe9cWsfRB4R6vzalpF1X3gJyvyD0SbkDl/bCKhDUz2Pig==}
+  '@verdaccio/e2e-ui@2.7.0':
+    resolution: {integrity: sha512-mM1/oYqC3zu4cnkB9BajNQMcIkNyGFI4RCCakpaQ6X4+bW7f+DCUVcxcxXO02M7rD0TNm18fmAYbIcaAOXtLSw==}
     peerDependencies:
       cypress: '>=12.0.0'
 
@@ -1427,9 +1427,6 @@ packages:
 
   dataloader@1.4.0:
     resolution: {integrity: sha512-68s5jYdlvasItOJnCuI2Q9s4q98g0pCyL3HrcKJu8KNugUl8ahgmZYg38ysLTgQjjXX3H8CJLkAvWrclWfcalw==}
-
-  dayjs@1.11.18:
-    resolution: {integrity: sha512-zFBQ7WFRvVRhKcWoUh+ZA1g2HVgUbsZm9sbddh8EC5iv93sui8DVVz1Npvz+r6meo9VKfa8NyLWBsQK1VvIKPA==}
 
   dayjs@1.11.23:
     resolution: {integrity: sha512-QDTCU0M0MxR3hQfnlDJfwekQiaanm1ubOD231u73WBckQ/fsamwRLiE2GBz6D3a/xF1NgfiDLJjXBa1hYOYTtQ==}
@@ -3616,7 +3613,7 @@ snapshots:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.8
       '@babel/helper-compilation-targets': 7.29.7
-      '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7)
+      '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7(supports-color@8.1.1))
       '@babel/helpers': 7.29.7
       '@babel/parser': 7.29.9
       '@babel/template': 7.29.7
@@ -3683,7 +3680,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/helper-module-transforms@7.29.7(@babel/core@7.29.7)':
+  '@babel/helper-module-transforms@7.29.7(@babel/core@7.29.7(supports-color@8.1.1))':
     dependencies:
       '@babel/core': 7.29.7(supports-color@8.1.1)
       '@babel/helper-module-imports': 7.29.7
@@ -4518,7 +4515,7 @@ snapshots:
       sanitize-filename: 1.6.3
       semver: 7.8.5
 
-  '@verdaccio/e2e-cli@3.2.1':
+  '@verdaccio/e2e-cli@3.2.1(supports-color@8.1.1)':
     dependencies:
       '@verdaccio/registry-cli': 1.1.0
       debug: 4.4.3(supports-color@8.1.1)
@@ -4527,7 +4524,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@verdaccio/e2e-ui@2.4.1(cypress@15.13.1)':
+  '@verdaccio/e2e-ui@2.7.0(cypress@15.13.1)':
     dependencies:
       cypress: 15.13.1
 
@@ -5041,7 +5038,7 @@ snapshots:
       cli-table3: 0.6.1
       commander: 6.2.1
       common-tags: 1.8.2
-      dayjs: 1.11.18
+      dayjs: 1.11.23
       debug: 4.4.3(supports-color@8.1.1)
       enquirer: 2.4.1
       eventemitter2: 6.4.7
@@ -5092,8 +5089,6 @@ snapshots:
       is-data-view: 1.0.2
 
   dataloader@1.4.0: {}
-
-  dayjs@1.11.18: {}
 
   dayjs@1.11.23: {}
 
