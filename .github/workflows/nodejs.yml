@@ -104,15 +104,24 @@ jobs:
           docker compose logs verdaccio 2>&1
           docker compose logs verdaccio 2>&1 | grep -q "aws-s3-storage"
 
-      - name: E2E - login, publish and fetch a package
+      - name: E2E - login check
         run: |
           pnpm verdaccioctl login -u test -p test1234 -r http://localhost:4873
           pnpm verdaccioctl whoami -r http://localhost:4873
 
-          TMPDIR=$(mktemp -d)
-          echo '{"name":"ci-test-pkg","version":"1.0.0"}' > "$TMPDIR/package.json"
-          cd "$TMPDIR"
-          npm publish --registry http://localhost:4873
+      # scenario:search is left out on purpose. Verdaccio wraps callback-based storage
+      # plugins in legacy-storage-adapter.cjs, whose search() drops the query and passes
+      # `() => true` as the name predicate, so the plugin never sees the text and cannot
+      # filter. Tracked in verdaccio/verdaccio; it is not a fault of these tests.
+      - name: E2E - registry battery (@verdaccio/e2e-cli)
+        run: |
+          pnpm e2e:registry --pm npm --pm pnpm \
+            --test publish --test install --test ci --test audit --test info \
+            --test deprecate --test dist-tags --test login --test ping \
+            --test search --test unpublish \
+            --test scenario:install-multiple-deps \
+            --test scenario:minimum-release-age \
+            --test scenario:tarballs --test scenario:metadata
 
       - name: E2E UI - publish tests (Cypress)
         run: pnpm e2e:ui:run
@@ -128,6 +137,10 @@ jobs:
             cypress/videos
             cypress/screenshots
           retention-days: 7
+
+      - name: Verdaccio logs on failure
+        if: failure()
+        run: docker compose logs verdaccio
 
       - name: Stop services
         if: always()
