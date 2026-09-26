@@ -1,3 +1,12 @@
+import {HEADERS} from '@verdaccio/core';
+import {ReadTarball, UploadTarball} from '@verdaccio/streams';
+import type {Callback, Logger, Package, ReadPackageCallback} from '@verdaccio/types';
+
+import type {S3Config} from '../types';
+import addTrailingSlash from './addTrailingSlash';
+import {deleteKeyPrefix} from './deleteKeyPrefix';
+import {convertS3Error, create409Error, is404Error} from './s3Errors';
+
 import {
   GetObjectCommand,
   PutObjectCommand,
@@ -6,17 +15,8 @@ import {
 } from '@aws-sdk/client-s3';
 import type {ObjectCannedACL, S3Client} from '@aws-sdk/client-s3';
 import {Upload} from '@aws-sdk/lib-storage';
-import type {Readable} from 'stream';
 import debugCore from 'debug';
-
-import {HEADERS} from '@verdaccio/core';
-import type {Callback, Logger, Package, ReadPackageCallback} from '@verdaccio/types';
-import {ReadTarball, UploadTarball} from '@verdaccio/streams';
-
-import type {S3Config} from '../types';
-import addTrailingSlash from './addTrailingSlash';
-import {deleteKeyPrefix} from './deleteKeyPrefix';
-import {convertS3Error, create409Error, is404Error} from './s3Errors';
+import type {Readable} from 'stream';
 
 const debug = debugCore('verdaccio:plugin:aws-s3-storage:package');
 

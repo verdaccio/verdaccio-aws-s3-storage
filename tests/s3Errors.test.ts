@@ -1,4 +1,3 @@
-import {describe, test, expect} from 'vitest';
 import {
   is404Error,
   create404Error,
@@ -8,6 +7,8 @@ import {
   create503Error,
   convertS3Error,
 } from '../src/s3Errors';
+
+import {describe, test, expect} from 'vitest';
 
 describe('s3Errors', () => {
   describe('create and check errors', () => {

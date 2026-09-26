@@ -1,6 +1,7 @@
-import {describe, test, expect, vi} from 'vitest';
-import {DeleteObjectsCommand} from '@aws-sdk/client-s3';
 import {deleteKeyPrefix} from '../src/deleteKeyPrefix';
+
+import {DeleteObjectsCommand} from '@aws-sdk/client-s3';
+import {describe, test, expect, vi} from 'vitest';
 
 function createFakeS3Client(responses: Record<string, any>) {
   return {

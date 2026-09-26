@@ -1,8 +1,8 @@
+import {create404Error} from './s3Errors';
+
 import type {S3Client} from '@aws-sdk/client-s3';
 import {ListObjectsV2Command, DeleteObjectsCommand} from '@aws-sdk/client-s3';
 import debugCore from 'debug';
-
-import {create404Error} from './s3Errors';
 
 const debug = debugCore('verdaccio:plugin:aws-s3-storage:delete-prefix');
 

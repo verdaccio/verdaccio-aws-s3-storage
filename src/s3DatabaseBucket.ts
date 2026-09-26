@@ -1,10 +1,10 @@
-import {GetObjectCommand, PutObjectCommand, HeadObjectCommand} from '@aws-sdk/client-s3';
-import type {S3Client} from '@aws-sdk/client-s3';
-import debugCore from 'debug';
-
 import type {Callback, Logger, Token, TokenFilter} from '@verdaccio/types';
 
 import type {S3Config} from '../types';
+
+import {GetObjectCommand, PutObjectCommand, HeadObjectCommand} from '@aws-sdk/client-s3';
+import type {S3Client} from '@aws-sdk/client-s3';
+import debugCore from 'debug';
 
 const debug = debugCore('verdaccio:plugin:aws-s3-storage:database:bucket');
 

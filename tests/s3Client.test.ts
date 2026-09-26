@@ -1,7 +1,8 @@
-import {describe, test, expect} from 'vitest';
-import {S3Client} from '@aws-sdk/client-s3';
 import {createS3Client} from '../src/s3Client';
 import type {S3Config} from '../types';
+
+import {S3Client} from '@aws-sdk/client-s3';
+import {describe, test, expect} from 'vitest';
 
 function makeConfig(overrides: Partial<S3Config> = {}): S3Config {
   return {

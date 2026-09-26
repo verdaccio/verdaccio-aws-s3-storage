@@ -1,7 +1,7 @@
+import type {S3Config} from '../types';
+
 import {S3Client} from '@aws-sdk/client-s3';
 import debugCore from 'debug';
-
-import type {S3Config} from '../types';
 
 const debug = debugCore('verdaccio:plugin:aws-s3-storage:s3-client');
 

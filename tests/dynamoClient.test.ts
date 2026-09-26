@@ -1,7 +1,8 @@
-import {describe, test, expect} from 'vitest';
-import {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb';
 import {createDynamoClient} from '../src/dynamoClient';
 import type {S3Config} from '../types';
+
+import {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb';
+import {describe, test, expect} from 'vitest';
 
 function makeConfig(overrides: Partial<S3Config> = {}): S3Config {
   return {

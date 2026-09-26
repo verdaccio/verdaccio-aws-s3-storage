@@ -1,5 +1,6 @@
-import {describe, test, expect} from 'vitest';
 import addTrailingSlash from '../src/addTrailingSlash';
+
+import {describe, test, expect} from 'vitest';
 
 describe('addTrailingSlash', () => {
   test('adds trailing slash to path without one', () => {

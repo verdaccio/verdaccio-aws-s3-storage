@@ -1,12 +1,12 @@
-import {DeleteCommand, GetCommand, PutCommand, QueryCommand} from '@aws-sdk/lib-dynamodb';
-import type {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb';
-import type {S3Client} from '@aws-sdk/client-s3';
-import debugCore from 'debug';
-
 import type {Callback, Logger, Token, TokenFilter} from '@verdaccio/types';
 
 import type {S3Config} from '../types';
 import {createDynamoClient} from './dynamoClient';
+
+import type {S3Client} from '@aws-sdk/client-s3';
+import {DeleteCommand, GetCommand, PutCommand, QueryCommand} from '@aws-sdk/lib-dynamodb';
+import type {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb';
+import debugCore from 'debug';
 
 const debug = debugCore('verdaccio:plugin:aws-s3-storage:database:dynamo');
 
