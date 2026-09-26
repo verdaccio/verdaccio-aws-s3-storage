@@ -1,9 +1,10 @@
-import {describe, test, expect, vi, beforeEach} from 'vitest';
-import {GetCommand, PutCommand, DeleteCommand, QueryCommand} from '@aws-sdk/lib-dynamodb';
 import type {Logger, Config} from '@verdaccio/types';
 
 import S3Database from '../src/s3Database';
 import S3PackageManager from '../src/s3PackageManager';
+
+import {GetCommand, PutCommand, DeleteCommand, QueryCommand} from '@aws-sdk/lib-dynamodb';
+import {describe, test, expect, vi, beforeEach} from 'vitest';
 
 const logger: Logger = {
   error: vi.fn(),

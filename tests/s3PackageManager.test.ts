@@ -1,11 +1,12 @@
-import {describe, test, expect, vi} from 'vitest';
-import {PassThrough} from 'stream';
-import {HeadObjectCommand, PutObjectCommand, DeleteObjectCommand} from '@aws-sdk/client-s3';
-import type {S3Client} from '@aws-sdk/client-s3';
 import type {Logger, Package} from '@verdaccio/types';
 
 import S3PackageManager from '../src/s3PackageManager';
 import type {S3Config} from '../types';
+
+import {HeadObjectCommand, PutObjectCommand, DeleteObjectCommand} from '@aws-sdk/client-s3';
+import type {S3Client} from '@aws-sdk/client-s3';
+import {PassThrough} from 'stream';
+import {describe, test, expect, vi} from 'vitest';
 
 const logger: Logger = {
   error: vi.fn(),

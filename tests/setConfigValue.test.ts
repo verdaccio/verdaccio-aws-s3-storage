@@ -1,5 +1,6 @@
-import {describe, test, expect, afterEach} from 'vitest';
 import setConfigValue from '../src/setConfigValue';
+
+import {describe, test, expect, afterEach} from 'vitest';
 
 describe('setConfigValue', () => {
   const envKey = 'TEST_VERDACCIO_CONFIG_VALUE';

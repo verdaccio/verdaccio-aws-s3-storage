@@ -1,8 +1,8 @@
+import type {S3Config} from '../types';
+
 import {DynamoDBClient} from '@aws-sdk/client-dynamodb';
 import {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb';
 import debugCore from 'debug';
-
-import type {S3Config} from '../types';
 
 const debug = debugCore('verdaccio:plugin:aws-s3-storage:dynamo-client');
 

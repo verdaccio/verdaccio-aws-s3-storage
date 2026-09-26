@@ -1,6 +1,3 @@
-import type {S3Client} from '@aws-sdk/client-s3';
-import debugCore from 'debug';
-
 import type {searchUtils} from '@verdaccio/core';
 import type {Callback, Config, Logger, Token, TokenFilter} from '@verdaccio/types';
 
@@ -11,6 +8,9 @@ import S3DatabaseBucket from './s3DatabaseBucket';
 import S3DatabaseDynamo from './s3DatabaseDynamo';
 import S3PackageManager from './s3PackageManager';
 import setConfigValue from './setConfigValue';
+
+import type {S3Client} from '@aws-sdk/client-s3';
+import debugCore from 'debug';
 
 const debug = debugCore('verdaccio:plugin:aws-s3-storage:database');
 

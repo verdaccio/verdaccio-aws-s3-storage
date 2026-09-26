@@ -1,7 +1,7 @@
-import debugCore from 'debug';
-
 import {errorUtils} from '@verdaccio/core';
 import type {VerdaccioError} from '@verdaccio/core';
+
+import debugCore from 'debug';
 
 const debug = debugCore('verdaccio:plugin:aws-s3-storage:errors');
 

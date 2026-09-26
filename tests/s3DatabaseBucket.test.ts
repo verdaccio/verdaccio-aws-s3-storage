@@ -1,10 +1,11 @@
-import {describe, test, expect, vi, beforeEach} from 'vitest';
-import {PutObjectCommand, GetObjectCommand} from '@aws-sdk/client-s3';
-import type {S3Client} from '@aws-sdk/client-s3';
 import type {Logger, Config} from '@verdaccio/types';
 
 import S3Database from '../src/s3Database';
 import S3PackageManager from '../src/s3PackageManager';
+
+import {PutObjectCommand, GetObjectCommand} from '@aws-sdk/client-s3';
+import type {S3Client} from '@aws-sdk/client-s3';
+import {describe, test, expect, vi, beforeEach} from 'vitest';
 
 const DB_KEY = 'prefix/verdaccio-s3-db.json';
 
