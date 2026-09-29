@@ -1,5 +1,11 @@
 # verdaccio-aws-s3-storage
 
+## 12.1.3
+
+### Patch Changes
+
+- 18eb0b8: Migrate the release workflow to Changesets action v2 and CLI v3.
+
 ## 12.1.2
 
 ### Patch Changes
