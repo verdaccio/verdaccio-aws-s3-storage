@@ -1,4 +1,3 @@
-import type {searchUtils} from '@verdaccio/core';
 import type {Callback, Config, Logger, Token, TokenFilter} from '@verdaccio/types';
 
 import type {S3Config} from '../types';
@@ -109,24 +108,6 @@ export default class S3Database {
    */
   public search(...args) {
     return this.database.search(...args);
-  }
-
-  public async filterByQuery(
-    _results: searchUtils.SearchItemPkg[],
-    _query: searchUtils.SearchQuery
-  ): Promise<searchUtils.SearchItemPkg[]> {
-    return _results;
-  }
-
-  public async getScore(_pkg: searchUtils.SearchItemPkg): Promise<searchUtils.Score> {
-    return {
-      final: 1,
-      detail: {
-        quality: 1,
-        popularity: 1,
-        maintenance: 1,
-      },
-    };
   }
 
   public getPackageStorage(packageName: string): S3PackageManager {
