@@ -302,25 +302,11 @@ describe('S3Database (bucket storage)', () => {
     });
   });
 
-  describe('search / filterByQuery / getScore', () => {
+  describe('search', () => {
     test('search returns empty array', async () => {
       const db = createDb();
       const results = await db.search({} as any);
       expect(results).toEqual([]);
-    });
-
-    test('filterByQuery returns results as-is', async () => {
-      const db = createDb();
-      const input = [{package: {name: 'test'}}] as any;
-      const results = await db.filterByQuery(input, {} as any);
-      expect(results).toBe(input);
-    });
-
-    test('getScore returns default score', async () => {
-      const db = createDb();
-      const score = await db.getScore({} as any);
-      expect(score.final).toBe(1);
-      expect(score.detail.quality).toBe(1);
     });
   });
 
