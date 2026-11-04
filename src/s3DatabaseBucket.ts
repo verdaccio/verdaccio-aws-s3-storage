@@ -2,7 +2,7 @@ import type {Callback, Logger, Token, TokenFilter} from '@verdaccio/types';
 
 import type {S3Config} from '../types';
 
-import {GetObjectCommand, PutObjectCommand, HeadObjectCommand} from '@aws-sdk/client-s3';
+import {GetObjectCommand, PutObjectCommand} from '@aws-sdk/client-s3';
 import type {S3Client} from '@aws-sdk/client-s3';
 import debugCore from 'debug';
 
@@ -35,9 +35,25 @@ export default class S3DatabaseBucket {
     this.logger.trace('aws-s3-storage: [init] verifying S3 connectivity');
     try {
       this._localData = await this._getData();
-    } catch {
-      await this._createData();
-      this._putData();
+    } catch (err: any) {
+      // Only a missing file may be replaced; any other failure would wipe the secret and tokens.
+      const notFound =
+        err?.name === 'NoSuchKey' ||
+        err?.name === 'NotFound' ||
+        err?.$metadata?.httpStatusCode === 404;
+      if (!notFound) {
+        debug('init: cannot read database: %o', err?.message);
+        this.logger.error(
+          {error: err?.message},
+          'aws-s3-storage: [init] cannot read the database, refusing to overwrite it: @{error}'
+        );
+        throw err;
+      }
+      debug('init: database not found, creating a new one');
+      this.logger.warn('aws-s3-storage: [init] database not found, creating a new one');
+      await new Promise<void>((resolve, reject): void => {
+        this._putData((putErr) => (putErr ? reject(putErr) : resolve()));
+      });
     }
     debug('init: connectivity verified');
     this.logger.trace('aws-s3-storage: [init] connectivity verified');
@@ -153,37 +169,6 @@ export default class S3DatabaseBucket {
   }
 
   // Bucket operations
-
-  public async _createData(): Promise<void> {
-    const key = `${this.config.keyPrefix}${LOCAL_STORAGE_KEY}`;
-    debug('createData bucket=%o key=%o', this.config.bucket, key);
-    this.logger.trace(
-      {bucket: this.config.bucket, key},
-      'aws-s3-storage: [_createData] creating bucket=@{bucket} key=@{key}'
-    );
-    void (async (): Promise<void> => {
-      try {
-        await this.s3.send(
-          new HeadObjectCommand({
-            Bucket: this.config.bucket,
-            Key: key,
-          })
-        );
-        debug('createData bucket=%o key=%o created', this.config.bucket, key);
-        this.logger.trace(
-          {bucket: this.config.bucket, key},
-          'aws-s3-storage: [_createData] created bucket=@{bucket} key=@{key}'
-        );
-      } catch (err: any) {
-        debug('_createData failed: %o', err.message);
-        this.logger.trace(
-          {error: err.message},
-          'aws-s3-storage: [_createData] write failed: @{error}'
-        );
-        throw err;
-      }
-    })();
-  }
 
   private async _getData(): Promise<LocalStorage> {
     const key = `${this.config.keyPrefix}${LOCAL_STORAGE_KEY}`;

@@ -3,7 +3,7 @@ import type {Logger, Config} from '@verdaccio/types';
 import S3Database from '../src/s3Database';
 import S3PackageManager from '../src/s3PackageManager';
 
-import {PutObjectCommand, GetObjectCommand} from '@aws-sdk/client-s3';
+import {PutObjectCommand, GetObjectCommand, HeadObjectCommand} from '@aws-sdk/client-s3';
 import type {S3Client} from '@aws-sdk/client-s3';
 import {describe, test, expect, vi, beforeEach} from 'vitest';
 
@@ -140,19 +140,85 @@ describe('S3Database (bucket storage)', () => {
     });
 
     test('creates registry file when missing', async () => {
+      // A missing key fails GetObject with NoSuchKey and HeadObject with NotFound, as S3 does.
       s3SendSpy = createFakeS3((cmd) => {
         if (cmd instanceof GetObjectCommand) throw s3Error('NoSuchKey', 404);
+        if (cmd instanceof HeadObjectCommand) throw s3Error('NotFound', 404);
         return {};
       }).send;
 
       const db = createDb();
-      await db.init();
-      await flushAsync();
+      await expect(db.init()).resolves.toBeUndefined();
 
-      const putCall = s3SendSpy.mock.calls.find((c) => c[0] instanceof PutObjectCommand)?.[0];
-      expect(putCall).toBeInstanceOf(PutObjectCommand);
+      const commands = s3SendSpy.mock.calls.map((c) => c[0].constructor);
+      expect(commands).toEqual([GetObjectCommand, PutObjectCommand]);
+      const putCall = s3SendSpy.mock.calls[1][0];
       expect(putCall.input.Key).toBe(DB_KEY);
       expect(JSON.parse(putCall.input.Body)).toEqual({secret: '', list: [], tokens: []});
+    });
+
+    test('fails when the new registry file cannot be written', async () => {
+      s3SendSpy = createFakeS3((cmd) => {
+        if (cmd instanceof GetObjectCommand) throw s3Error('NoSuchKey', 404);
+        if (cmd instanceof PutObjectCommand) throw s3Error('AccessDenied', 403);
+        return {};
+      }).send;
+
+      const db = createDb();
+      await expect(db.init()).rejects.toThrow('AccessDenied');
+    });
+
+    test('does not overwrite the registry file when it cannot be read', async () => {
+      s3SendSpy = createFakeS3((cmd) => {
+        if (cmd instanceof GetObjectCommand) throw s3Error('InternalError', 503);
+        return {};
+      }).send;
+
+      const db = createDb();
+      await expect(db.init()).rejects.toThrow('InternalError');
+      await flushAsync();
+
+      expect(s3SendSpy.mock.calls.some((c) => c[0] instanceof PutObjectCommand)).toBe(false);
+    });
+
+    test('does not overwrite the registry file when it is not valid JSON', async () => {
+      s3SendSpy = createFakeS3((cmd) => {
+        if (cmd instanceof GetObjectCommand) {
+          return {Body: {transformToString: async () => '{"secret": "truncated'}};
+        }
+        return {};
+      }).send;
+
+      const db = createDb();
+      await expect(db.init()).rejects.toThrow(SyntaxError);
+      await flushAsync();
+
+      expect(s3SendSpy.mock.calls.some((c) => c[0] instanceof PutObjectCommand)).toBe(false);
+    });
+
+    test('creating the registry file does not produce an unhandledRejection', async () => {
+      s3SendSpy = createFakeS3((cmd) => {
+        if (cmd instanceof GetObjectCommand) throw s3Error('NoSuchKey', 404);
+        if (cmd instanceof HeadObjectCommand) throw s3Error('NotFound', 404);
+        return {};
+      }).send;
+
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown): void => {
+        unhandled.push(reason);
+      };
+      process.on('unhandledRejection', onUnhandled);
+
+      try {
+        const db = createDb();
+        await db.init();
+        // Give Node a full turn to report an unhandled rejection, if there is one.
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      } finally {
+        process.off('unhandledRejection', onUnhandled);
+      }
+
+      expect(unhandled).toEqual([]);
     });
   });
 
