@@ -5,6 +5,7 @@ import type {Callback, Logger, Package, ReadPackageCallback} from '@verdaccio/ty
 import type {S3Config} from '../types';
 import addTrailingSlash from './addTrailingSlash';
 import {deleteKeyPrefix} from './deleteKeyPrefix';
+import {destroyS3Body} from './destroyS3Body';
 import {convertS3Error, create409Error, is404Error} from './s3Errors';
 
 import {
@@ -16,7 +17,8 @@ import {
 import type {ObjectCannedACL, S3Client} from '@aws-sdk/client-s3';
 import {Upload} from '@aws-sdk/lib-storage';
 import debugCore from 'debug';
-import type {Readable} from 'stream';
+import type {Readable} from 'node:stream';
+import {pipeline} from 'node:stream/promises';
 
 const debug = debugCore('verdaccio:plugin:aws-s3-storage:package');
 
@@ -125,8 +127,9 @@ export default class S3PackageManager {
       })
     );
 
-    const bodyStr = (await response.Body?.transformToString()) ?? '';
+    let bodyStr = '';
     try {
+      bodyStr = (await response.Body?.transformToString()) ?? '';
       const data = JSON.parse(bodyStr);
       debug(
         '_getData loaded package=%o versions=%d',
@@ -139,10 +142,11 @@ export default class S3PackageManager {
       );
       return data;
     } catch (e) {
-      debug('_getData JSON parse error for key=%o bodyLength=%d', key, bodyStr.length);
+      destroyS3Body(response.Body);
+      debug('_getData failed for key=%o bodyLength=%d', key, bodyStr.length);
       this.logger.trace(
         {key, bodyLength: bodyStr.length},
-        'aws-s3-storage: [_getData] JSON parse error key=@{key} bodyLength=@{bodyLength}'
+        'aws-s3-storage: [_getData] failed key=@{key} bodyLength=@{bodyLength}'
       );
       throw e;
     }
@@ -431,7 +435,7 @@ export default class S3PackageManager {
     return uploadStream;
   }
 
-  public readTarball(name: string): ReadTarball {
+  public readTarball(name: string, options?: {signal?: AbortSignal}): ReadTarball {
     const key = `${this.packagePath}/${name}`;
     debug('readTarball name=%o bucket=%o key=%o', name, this.config.bucket, key);
     this.logger.trace(
@@ -439,6 +443,41 @@ export default class S3PackageManager {
       'aws-s3-storage: [readTarball] reading name=@{name} from bucket=@{bucket} key=@{key}'
     );
     const readTarballStream = new ReadTarball({});
+    const abortController = new AbortController();
+    let bodyStream: Readable | undefined;
+
+    const abortRequest = (): void => {
+      debug('readTarball name=%o aborting stream', name);
+      this.logger.trace({name}, 'aws-s3-storage: [readTarball] aborting stream for name=@{name}');
+      if (!abortController.signal.aborted) {
+        abortController.abort();
+      }
+      // AbortController covers in-flight send(); destroy covers a body already received.
+      // Destroy alone does not always free the NodeHttpHandler keep-alive slot.
+      destroyS3Body(bodyStream);
+    };
+
+    // Wire immediately so an abort that lands before send() resolves still cancels the request.
+    readTarballStream.abort = abortRequest;
+
+    // verdaccio 9 aborts the signal it passes here instead of calling abort()
+    const signal = options?.signal;
+    const onSignalAbort = (): void => {
+      abortRequest();
+      readTarballStream.destroy();
+    };
+    if (signal?.aborted) {
+      onSignalAbort();
+      return readTarballStream;
+    }
+    signal?.addEventListener('abort', onSignalAbort, {once: true});
+    // a consumer that destroys the stream early must cancel the request as well
+    readTarballStream.once('close', () => {
+      signal?.removeEventListener('abort', onSignalAbort);
+      if (!readTarballStream.readableEnded) {
+        abortRequest();
+      }
+    });
 
     void (async (): Promise<void> => {
       try {
@@ -446,8 +485,21 @@ export default class S3PackageManager {
           new GetObjectCommand({
             Bucket: this.config.bucket,
             Key: key,
-          })
+          }),
+          {abortSignal: abortController.signal}
         );
+
+        bodyStream = response.Body as Readable | undefined;
+
+        if (abortController.signal.aborted) {
+          destroyS3Body(bodyStream);
+          return;
+        }
+
+        if (!bodyStream) {
+          readTarballStream.emit('error', convertS3Error(new Error('Empty S3 GetObject body')));
+          return;
+        }
 
         const contentLength = response.ContentLength;
         debug('readTarball name=%o contentLength=%o', name, contentLength);
@@ -459,28 +511,16 @@ export default class S3PackageManager {
           readTarballStream.emit(HEADERS.CONTENT_LENGTH, contentLength);
         }
         readTarballStream.emit('open');
-
-        const bodyStream = response.Body as Readable;
-        bodyStream.on('error', (err) => {
-          debug('readTarball name=%o stream error: %o', name, (err as any).message);
-          this.logger.trace(
-            {name, error: (err as any).message},
-            'aws-s3-storage: [readTarball] stream error for name=@{name}: @{error}'
-          );
-          readTarballStream.emit('error', convertS3Error(err as any));
-        });
-        bodyStream.pipe(readTarballStream);
         this.logger.trace({name}, 'aws-s3-storage: [readTarball] piping stream for name=@{name}');
 
-        readTarballStream.abort = (): void => {
-          debug('readTarball name=%o aborting stream', name);
-          this.logger.trace(
-            {name},
-            'aws-s3-storage: [readTarball] aborting stream for name=@{name}'
-          );
-          bodyStream.destroy();
-        };
+        // pipeline destroys the S3 body when the consumer closes, errors, or is destroyed.
+        // pipe() does not, and leaks keep-alive sockets into the SDK pool.
+        await pipeline(bodyStream, readTarballStream);
       } catch (err: any) {
+        destroyS3Body(bodyStream);
+        if (abortController.signal.aborted || readTarballStream.destroyed) {
+          return;
+        }
         debug('readTarball name=%o failed: %o', name, err.message);
         this.logger.trace(
           {name, error: err.message},

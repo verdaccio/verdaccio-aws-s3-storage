@@ -1,6 +1,7 @@
 import type {Callback, Logger, Token, TokenFilter} from '@verdaccio/types';
 
 import type {S3Config} from '../types';
+import {destroyS3Body} from './destroyS3Body';
 
 import {GetObjectCommand, PutObjectCommand, HeadObjectCommand} from '@aws-sdk/client-s3';
 import type {S3Client} from '@aws-sdk/client-s3';
@@ -199,8 +200,9 @@ export default class S3DatabaseBucket {
       })
     );
 
-    const bodyStr = (await response.Body?.transformToString()) ?? '';
+    let bodyStr = '';
     try {
+      bodyStr = (await response.Body?.transformToString()) ?? '';
       const data = JSON.parse(bodyStr);
       debug('_getData loaded package=%o count=%d', data.name, data.list.length);
       this.logger.trace(
@@ -209,10 +211,11 @@ export default class S3DatabaseBucket {
       );
       return data;
     } catch (err: any) {
-      debug('_getData JSON parse error for key=%o bodyLength=%d', key, bodyStr.length);
+      destroyS3Body(response.Body);
+      debug('_getData failed for key=%o bodyLength=%d', key, bodyStr.length);
       this.logger.trace(
         {key, bodyLength: bodyStr.length},
-        'aws-s3-storage: [_getData] JSON parse error key=@{key} bodyLength=@{bodyLength}'
+        'aws-s3-storage: [_getData] failed key=@{key} bodyLength=@{bodyLength}'
       );
       throw err;
     }

@@ -63,6 +63,12 @@ store:
     sessionToken: your-token # optional
     proxy: https://your-proxy # optional
 
+    # Optional S3 HTTP client overrides (omit all four to keep AWS SDK defaults)
+    # connectionTimeout: 10000
+    # requestTimeout: 300000
+    # socketTimeout: 300000
+    # maxSockets: 50
+
     # DynamoDB
     dynamoTableName: verdaccio-registry
     dynamoEndpoint: https://dynamodb.us-east-1.amazonaws.com # optional
@@ -70,6 +76,21 @@ store:
     # or
     dynamoTableName: none
 ```
+
+### S3 client network settings
+
+These keys are **opt-in**. If none are set, the plugin does not install a custom `requestHandler` and the AWS SDK `NodeHttpHandler` defaults apply (no finite timeouts; `maxSockets` 50).
+
+| Option              | Default when unset | Description                                                                                         |
+| ------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `connectionTimeout` | SDK default (`0`)  | Max ms to establish a TCP connection to S3/MinIO                                                    |
+| `requestTimeout`    | SDK default (`0`)  | Max ms for the full HTTP request and response. When `> 0`, timeouts throw (`throwOnRequestTimeout`) |
+| `socketTimeout`     | SDK default (`0`)  | Max ms a socket may stay idle before it is closed (active downloads keep resetting this)            |
+| `maxSockets`        | SDK default (`50`) | Max concurrent keep-alive sockets per host                                                          |
+
+Setting any of these installs a custom `NodeHttpHandler`. When `maxSockets` is set, the plugin creates the `http`/`https` Agents eagerly so concurrent first requests share one pool.
+
+Cancelled or partially consumed `GetObject` responses can otherwise hold keep-alive sockets forever ([aws-sdk-js-v3#6691](https://github.com/aws/aws-sdk-js-v3/issues/6691)); this plugin releases bodies via `pipeline` and `AbortController` regardless of whether these options are set.
 
 ### Environment variable substitution
 

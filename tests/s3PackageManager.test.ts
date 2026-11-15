@@ -304,6 +304,35 @@ describe('S3PackageManager', () => {
       });
       expect(err.code).toBe(404);
     });
+
+    test('passes abortSignal to GetObject so early abort cancels send()', async () => {
+      let resolveStarted!: () => void;
+      const sendStarted = new Promise<void>((resolve) => {
+        resolveStarted = resolve;
+      });
+
+      const s3 = {
+        send: vi.fn((_command: any, options?: {abortSignal?: AbortSignal}) => {
+          return new Promise((_resolve, reject) => {
+            resolveStarted();
+            options?.abortSignal?.addEventListener('abort', () => {
+              const err: any = new Error('Request aborted');
+              err.name = 'AbortError';
+              reject(err);
+            });
+          });
+        }),
+      } as any;
+
+      const pm = new S3PackageManager(makeConfig(), 'my-pkg', logger, s3);
+      const stream = pm.readTarball('file.tgz');
+
+      await sendStarted;
+      expect(s3.send.mock.calls[0][1]?.abortSignal).toBeInstanceOf(AbortSignal);
+      stream.abort();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(s3.send.mock.calls[0][1]?.abortSignal.aborted).toBe(true);
+    });
   });
 
   describe('writeTarball', () => {
