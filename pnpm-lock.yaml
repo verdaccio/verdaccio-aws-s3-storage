@@ -52,8 +52,8 @@ importers:
         specifier: 25.5.0
         version: 25.5.0
       '@verdaccio/e2e-cli':
-        specifier: 3.2.1
-        version: 3.2.1(supports-color@8.1.1)
+        specifier: 4.2.0
+        version: 4.2.0
       '@verdaccio/e2e-ui':
         specifier: 2.9.0
         version: 2.9.0(cypress@15.13.1)
@@ -857,8 +857,8 @@ packages:
     resolution: {integrity: sha512-7oEE5rlJ7E3gtHfVMUQr++R1vxyAmPHtPqYTxLrlFgBENed++6sDfBfFhw1M8rOoS9aUTW3CzQUwF7Uf4yNWzw==}
     engines: {node: '>=24'}
 
-  '@verdaccio/e2e-cli@3.2.1':
-    resolution: {integrity: sha512-nHR1EHy8drB7T0RQNAVoo73tWjRyAxSw9DRPXjYwll394S7eqTFOW6XFRwD67uTn6T4f38kq4tNx9M42winAYQ==}
+  '@verdaccio/e2e-cli@4.2.0':
+    resolution: {integrity: sha512-uj5FO0UDhOUMNKgRAgJNfITSLthms5xbY9Zj1uur7u9JuX1XzVfyO9l+yx4vHMAOpMwZPMTVYOWMJkxsJQ0gPg==}
     hasBin: true
 
   '@verdaccio/e2e-ui@2.9.0':
@@ -1624,8 +1624,8 @@ packages:
     resolution: {integrity: sha512-dayzUzKkJ1MkuUtZglSebU43utNXH0OWQByK9rKOOuYIO8M5TV1y+n8ALMdG0rdzBnfNkOmZEqrURepb0ejqBw==}
     hasBin: true
 
-  js-yaml@5.2.3:
-    resolution: {integrity: sha512-n+mUVyUX5bVv7G/G2zyIHOhdxfuU1dY2NOFzTQUWiMUbFss8b57NFlgCCaggU78wSw5KVS9cllzeLyzyR+n5nw==}
+  js-yaml@5.4.1:
+    resolution: {integrity: sha512-28R/k+NAjeuf7+CKlTxWZVExJGwVVLwY06DgEnOMz2gEpfNkDcD7QvyiVPT0xy0XXhU8vHsd4Ot42OOPdJG7dQ==}
     hasBin: true
 
   jsbn@0.1.1:
@@ -3373,12 +3373,12 @@ snapshots:
       sanitize-filename: 1.6.3
       semver: 7.8.5
 
-  '@verdaccio/e2e-cli@3.2.1(supports-color@8.1.1)':
+  '@verdaccio/e2e-cli@4.2.0':
     dependencies:
       '@verdaccio/registry-cli': 1.1.0
       debug: 4.4.3(supports-color@8.1.1)
       get-port: 7.2.0
-      js-yaml: 5.2.3
+      js-yaml: 5.4.1
     transitivePeerDependencies:
       - supports-color
 
@@ -4163,7 +4163,7 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
-  js-yaml@5.2.3:
+  js-yaml@5.4.1:
     dependencies:
       argparse: 2.0.1
 
