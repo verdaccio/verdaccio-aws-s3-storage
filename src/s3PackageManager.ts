@@ -435,7 +435,7 @@ export default class S3PackageManager {
     return uploadStream;
   }
 
-  public readTarball(name: string): ReadTarball {
+  public readTarball(name: string, options?: {signal?: AbortSignal}): ReadTarball {
     const key = `${this.packagePath}/${name}`;
     debug('readTarball name=%o bucket=%o key=%o', name, this.config.bucket, key);
     this.logger.trace(
@@ -459,6 +459,25 @@ export default class S3PackageManager {
 
     // Wire immediately so an abort that lands before send() resolves still cancels the request.
     readTarballStream.abort = abortRequest;
+
+    // verdaccio 9 aborts the signal it passes here instead of calling abort()
+    const signal = options?.signal;
+    const onSignalAbort = (): void => {
+      abortRequest();
+      readTarballStream.destroy();
+    };
+    if (signal?.aborted) {
+      onSignalAbort();
+      return readTarballStream;
+    }
+    signal?.addEventListener('abort', onSignalAbort, {once: true});
+    // a consumer that destroys the stream early must cancel the request as well
+    readTarballStream.once('close', () => {
+      signal?.removeEventListener('abort', onSignalAbort);
+      if (!readTarballStream.readableEnded) {
+        abortRequest();
+      }
+    });
 
     void (async (): Promise<void> => {
       try {

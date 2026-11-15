@@ -231,4 +231,112 @@ describe('S3 socket pool leak (readTarball)', () => {
     const later = pm.readTarball('final.tgz');
     await expect(readUntilEnd(later, 3000)).resolves.toBe('ok!');
   });
+
+  // verdaccio 9 never calls abort(): it aborts the signal it passed to readTarball
+  test('aborted signal before GetObject responds cancels the request and frees the pool', async () => {
+    const maxSockets = 2;
+    const state: FakeS3State = {completeFast: false, stallHeaders: true};
+    const {server, sockets} = createFakeS3Server(state);
+    servers.push(server);
+    openSockets.push(sockets);
+    const port = await listen(server);
+
+    const config = makeConfig(port, maxSockets);
+    const s3 = createS3Client(config);
+    clients.push(s3);
+    const pm = new S3PackageManager(config, 'my-pkg', logger, s3);
+
+    const controller = new AbortController();
+    const streams = Array.from({length: maxSockets}, (_, i) => {
+      const stream = pm.readTarball(`signal-${i}.tgz`, {signal: controller.signal});
+      stream.on('error', () => undefined);
+      return stream;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    controller.abort();
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    expect(streams.every((stream) => stream.destroyed)).toBe(true);
+    state.stallHeaders = false;
+    state.completeFast = true;
+    const later = pm.readTarball('final.tgz');
+    await expect(readUntilEnd(later, 3000)).resolves.toBe('ok!');
+  });
+
+  test('a signal aborted before the read starts never holds a socket', async () => {
+    const maxSockets = 1;
+    const state: FakeS3State = {completeFast: false, stallHeaders: true};
+    const {server, sockets} = createFakeS3Server(state);
+    servers.push(server);
+    openSockets.push(sockets);
+    const port = await listen(server);
+
+    const config = makeConfig(port, maxSockets);
+    const s3 = createS3Client(config);
+    clients.push(s3);
+    const pm = new S3PackageManager(config, 'my-pkg', logger, s3);
+
+    const controller = new AbortController();
+    controller.abort();
+    const stream = pm.readTarball('gone.tgz', {signal: controller.signal});
+    stream.on('error', () => undefined);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    expect(stream.destroyed).toBe(true);
+    state.stallHeaders = false;
+    state.completeFast = true;
+    const later = pm.readTarball('final.tgz');
+    await expect(readUntilEnd(later, 3000)).resolves.toBe('ok!');
+  });
+
+  test('destroying the stream before GetObject responds cancels the request', async () => {
+    const maxSockets = 2;
+    const state: FakeS3State = {completeFast: false, stallHeaders: true};
+    const {server, sockets} = createFakeS3Server(state);
+    servers.push(server);
+    openSockets.push(sockets);
+    const port = await listen(server);
+
+    const config = makeConfig(port, maxSockets);
+    const s3 = createS3Client(config);
+    clients.push(s3);
+    const pm = new S3PackageManager(config, 'my-pkg', logger, s3);
+
+    const streams = Array.from({length: maxSockets}, (_, i) => {
+      const stream = pm.readTarball(`destroyed-${i}.tgz`);
+      stream.on('error', () => undefined);
+      return stream;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    for (const stream of streams) {
+      stream.destroy();
+    }
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    state.stallHeaders = false;
+    state.completeFast = true;
+    const later = pm.readTarball('final.tgz');
+    await expect(readUntilEnd(later, 3000)).resolves.toBe('ok!');
+  });
+
+  test('a completed download with a signal leaves the stream and the pool intact', async () => {
+    const state: FakeS3State = {completeFast: true, stallHeaders: false};
+    const {server, sockets} = createFakeS3Server(state);
+    servers.push(server);
+    openSockets.push(sockets);
+    const port = await listen(server);
+
+    const config = makeConfig(port, 1);
+    const s3 = createS3Client(config);
+    clients.push(s3);
+    const pm = new S3PackageManager(config, 'my-pkg', logger, s3);
+
+    const controller = new AbortController();
+    const first = pm.readTarball('first.tgz', {signal: controller.signal});
+    await expect(readUntilEnd(first, 3000)).resolves.toBe('ok!');
+    // aborting after the download finished must be harmless
+    controller.abort();
+    const second = pm.readTarball('second.tgz');
+    await expect(readUntilEnd(second, 3000)).resolves.toBe('ok!');
+  });
 });
