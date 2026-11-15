@@ -55,8 +55,8 @@ importers:
         specifier: 3.2.1
         version: 3.2.1(supports-color@8.1.1)
       '@verdaccio/e2e-ui':
-        specifier: 2.7.0
-        version: 2.7.0(cypress@15.13.1)
+        specifier: 2.9.0
+        version: 2.9.0(cypress@15.13.1)
       '@verdaccio/plugin-verifier':
         specifier: 1.0.0-next-9.28
         version: 1.0.0-next-9.28(supports-color@8.1.1)(typanion@3.14.0)
@@ -777,6 +777,9 @@ packages:
   '@smithy/core@3.34.1':
     resolution: {integrity: sha512-dLcOUxz8YCv1RZUMKq6GbyUf95pLbrqh34bPvpCZ1+CByFF31BEAFewZjsGCnVsZTKdThNENfGyAgk2TJqVwSw==}
     engines: {node: '>=18.0.0'}
+    deprecated: |-
+      Deprecated due to a bug in custom logger data redaction. Upgrade to the latest version. If you used a custom logger with this
+        version, review your logs and rotate any credentials or other secrets. See https://github.com/aws/aws-sdk-js-v3/issues/8393.
 
   '@smithy/credential-provider-imds@4.5.2':
     resolution: {integrity: sha512-A9uSdn72ozbRUSit0eib0TW7nXuNPlaeM0zcGkJ+nE6tFcSDbnmtwoxbTCFBukVQcszDAyvsd7+rTduPTXpygg==}
@@ -858,8 +861,8 @@ packages:
     resolution: {integrity: sha512-nHR1EHy8drB7T0RQNAVoo73tWjRyAxSw9DRPXjYwll394S7eqTFOW6XFRwD67uTn6T4f38kq4tNx9M42winAYQ==}
     hasBin: true
 
-  '@verdaccio/e2e-ui@2.7.0':
-    resolution: {integrity: sha512-mM1/oYqC3zu4cnkB9BajNQMcIkNyGFI4RCCakpaQ6X4+bW7f+DCUVcxcxXO02M7rD0TNm18fmAYbIcaAOXtLSw==}
+  '@verdaccio/e2e-ui@2.9.0':
+    resolution: {integrity: sha512-IRCUfOrGXU+ilRp48Mv9ThEP+FWrOTy64KxyDX9LCGYFlYUhUU+4WzLX6X9z8pEgdBkZq4vnC5LPcWJ+N72fmw==}
     peerDependencies:
       cypress: '>=12.0.0'
 
@@ -3379,7 +3382,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@verdaccio/e2e-ui@2.7.0(cypress@15.13.1)':
+  '@verdaccio/e2e-ui@2.9.0(cypress@15.13.1)':
     dependencies:
       cypress: 15.13.1
 
