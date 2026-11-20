@@ -244,6 +244,31 @@ describe('S3Database', () => {
       expect(cmd.input.ExpressionAttributeValues).toEqual({':pk': 'TOKEN#admin'});
     });
 
+    test('readTokens follows pagination past the 1MB Query cap', async () => {
+      // DynamoDB truncates a Query at 1MB and returns LastEvaluatedKey. An
+      // unpaginated read drops everything after the cutoff, and verdaccio
+      // answers 403 for a token it cannot see.
+      dynamoSendSpy
+        .mockResolvedValueOnce({
+          Items: [{user: 'admin', sk: '1aaa', token: 'jwt-1', readonly: false, created: '1'}],
+          LastEvaluatedKey: {pk: 'TOKEN#admin', sk: '1aaa'},
+        })
+        .mockResolvedValueOnce({
+          Items: [{user: 'admin', sk: 'f6c2', token: 'jwt-2', readonly: true, created: '2'}],
+        });
+      const db = createDb();
+
+      const tokens = await db.readTokens({user: 'admin'});
+
+      expect(tokens.map((t) => t.key)).toEqual(['1aaa', 'f6c2']);
+      expect(dynamoSendSpy).toHaveBeenCalledTimes(2);
+      expect(dynamoSendSpy.mock.calls[0][0].input.ExclusiveStartKey).toBeUndefined();
+      expect(dynamoSendSpy.mock.calls[1][0].input.ExclusiveStartKey).toEqual({
+        pk: 'TOKEN#admin',
+        sk: '1aaa',
+      });
+    });
+
     test('readTokens returns empty array when no tokens', async () => {
       dynamoSendSpy.mockResolvedValue({Items: []});
       const db = createDb();
