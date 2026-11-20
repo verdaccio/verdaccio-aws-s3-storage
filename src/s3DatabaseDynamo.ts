@@ -255,15 +255,37 @@ export default class S3DatabaseDynamo {
       {user: filter.user, table: this.tableName},
       'aws-s3-storage: [readTokens] querying tokens for user=@{user}'
     );
-    const result = await this.dynamo.send(
-      new QueryCommand({
-        TableName: this.tableName,
-        KeyConditionExpression: 'pk = :pk',
-        ExpressionAttributeValues: {':pk': `TOKEN#${filter.user}`},
-      })
-    );
+    // DynamoDB caps a Query response at 1MB. A user with enough tokens spills
+    // past that, and an unpaginated read silently returns only the
+    // lexicographically-earliest subset: verdaccio then reports any token
+    // sorting after the cutoff as missing and answers 403.
+    const items: Record<string, unknown>[] = [];
+    let startKey: Record<string, unknown> | undefined;
+    let pages = 0;
 
-    const tokens = (result.Items || []).map((item) => ({
+    do {
+      const result = await this.dynamo.send(
+        new QueryCommand({
+          TableName: this.tableName,
+          KeyConditionExpression: 'pk = :pk',
+          ExpressionAttributeValues: {':pk': `TOKEN#${filter.user}`},
+          ExclusiveStartKey: startKey,
+        })
+      );
+      items.push(...((result.Items || []) as Record<string, unknown>[]));
+      startKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
+      pages += 1;
+    } while (startKey);
+
+    if (pages > 1) {
+      this.logger.warn(
+        {user: filter.user, count: items.length, pages},
+        'aws-s3-storage: [readTokens] user=@{user} has @{count} tokens spanning @{pages} pages; ' +
+          'every authenticated request reads them all — prune revoked tokens'
+      );
+    }
+
+    const tokens = items.map((item) => ({
       user: item.user as string,
       key: item.sk as string,
       token: item.token as string,
