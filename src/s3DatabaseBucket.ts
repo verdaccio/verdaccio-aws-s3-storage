@@ -9,6 +9,7 @@ import debugCore from 'debug';
 const debug = debugCore('verdaccio:plugin:aws-s3-storage:database:bucket');
 
 const LOCAL_STORAGE_KEY = 'verdaccio-s3-db.json';
+const MAX_ATTEMPTS = 5;
 
 type LocalStorage = {
   secret: string;
@@ -21,6 +22,8 @@ export default class S3DatabaseBucket {
   public config: S3Config;
   private s3: S3Client;
   private _localData: LocalStorage;
+  // Changes to the database run one at a time within this process.
+  private _queue: Promise<void> = Promise.resolve();
 
   public constructor(config: S3Config, logger: Logger, s3: S3Client) {
     this.logger = logger;
@@ -66,41 +69,47 @@ export default class S3DatabaseBucket {
   }
 
   public async setSecret(secret: string): Promise<void> {
-    this._localData.secret = secret;
-    this._putData();
+    await this._mutate((data) => {
+      if (data.secret === secret) return false;
+      data.secret = secret;
+      return true;
+    });
   }
 
   // List of Packages
 
+  // Other instances may have changed the list, so it is read from S3 on every call.
   public get(callback?: Callback): string[] | void {
-    const list = this._localData.list;
-    if (typeof callback === 'function') {
-      callback(null, list);
-      return;
+    if (typeof callback !== 'function') {
+      return this._localData.list;
     }
-    return list;
+    void this._readList().then((list) => callback(null, list));
   }
 
   public add(name: string, callback: Callback): void {
     this.logger.debug({name}, 's3: [add] private package @{name}');
-    if (this._localData.list.includes(name)) {
-      callback(null);
-      return;
-    }
-    this._localData.list.push(name);
-    this.logger.trace({name}, 's3: [add] @{name} has been added');
-    this._putData(callback);
+    this._mutate((data) => {
+      if (data.list.includes(name)) return false;
+      data.list.push(name);
+      this.logger.trace({name}, 's3: [add] @{name} has been added');
+      return true;
+    }).then(
+      () => callback(null),
+      (err) => callback(err)
+    );
   }
 
   public remove(name: string, callback: Callback): void {
     this.logger.debug({name}, 's3: [remove] private package @{name}');
-    if (!this._localData.list.includes(name)) {
-      callback(null);
-      return;
-    }
-    this._localData.list = this._localData.list.filter((pkg) => pkg !== name);
-    this.logger.trace({name}, 's3: [remove] @{name} has been removed');
-    this._putData(callback);
+    this._mutate((data) => {
+      if (!data.list.includes(name)) return false;
+      data.list = data.list.filter((pkg) => pkg !== name);
+      this.logger.trace({name}, 's3: [remove] @{name} has been removed');
+      return true;
+    }).then(
+      () => callback(null),
+      (err) => callback(err)
+    );
   }
 
   /**
@@ -117,7 +126,7 @@ export default class S3DatabaseBucket {
       this.logger.trace('aws-s3-storage: [search] callback pattern, iterating packages');
       void (async (): Promise<void> => {
         try {
-          const list = this._localData.list;
+          const list = await this._readList();
           debug('search: found %d packages', list.length);
           for (const item of list) {
             await new Promise<void>((resolve): void => {
@@ -169,6 +178,83 @@ export default class S3DatabaseBucket {
   }
 
   // Bucket operations
+
+  private _databaseKey(): string {
+    return `${this.config.keyPrefix}${LOCAL_STORAGE_KEY}`;
+  }
+
+  private async _readDatabase(): Promise<{data: LocalStorage; etag?: string}> {
+    const response = await this.s3.send(
+      new GetObjectCommand({Bucket: this.config.bucket, Key: this._databaseKey()})
+    );
+    const bodyStr = (await response.Body?.transformToString()) ?? '';
+    return {data: JSON.parse(bodyStr), etag: response.ETag};
+  }
+
+  private async _writeDatabase(data: LocalStorage, etag?: string): Promise<void> {
+    await this.s3.send(
+      new PutObjectCommand({
+        Body: JSON.stringify(data, null, '  '),
+        Bucket: this.config.bucket,
+        Key: this._databaseKey(),
+        IfMatch: this.config.conditionalWrites === true ? etag : undefined,
+      })
+    );
+  }
+
+  /**
+   * Reads the database from S3, applies `apply` to that copy and writes it back. `apply`
+   * returns false when there is nothing to write. Without this, every instance wrote back its
+   * own in-memory copy and dropped the changes made by the others. With `conditionalWrites`,
+   * a write that lost the race to another instance fails with 412 and the change is applied
+   * again to a fresh copy.
+   */
+  private _mutate(apply: (data: LocalStorage) => boolean): Promise<void> {
+    const run = this._queue.then(async (): Promise<void> => {
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        const {data, etag} = await this._readDatabase();
+        if (!apply(data)) {
+          this._localData = data;
+          return;
+        }
+        try {
+          await this._writeDatabase(data, etag);
+          this._localData = data;
+          return;
+        } catch (err: any) {
+          if (err?.$metadata?.httpStatusCode !== 412) throw err;
+          debug('_mutate: write conflict, attempt %d', attempt);
+          this.logger.warn(
+            {attempt},
+            'aws-s3-storage: [db] database changed by another instance, retrying (attempt @{attempt})'
+          );
+          if (attempt < MAX_ATTEMPTS) {
+            await new Promise((resolve) => setTimeout(resolve, 50 + Math.random() * 150));
+          }
+        }
+      }
+      throw new Error(
+        `aws-s3-storage: [db] ${LOCAL_STORAGE_KEY} kept changing under this write, gave up after ${MAX_ATTEMPTS} attempts`
+      );
+    });
+    this._queue = run.catch(() => undefined);
+    return run;
+  }
+
+  // The list from S3; the in-memory copy if S3 cannot be read, so the web UI keeps working.
+  private async _readList(): Promise<string[]> {
+    try {
+      const {data} = await this._readDatabase();
+      this._localData = data;
+      return data.list;
+    } catch (err: any) {
+      this.logger.warn(
+        {error: err?.message},
+        'aws-s3-storage: [db] cannot read the database, serving the in-memory list: @{error}'
+      );
+      return this._localData.list;
+    }
+  }
 
   private async _getData(): Promise<LocalStorage> {
     const key = `${this.config.keyPrefix}${LOCAL_STORAGE_KEY}`;

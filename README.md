@@ -69,7 +69,21 @@ store:
     dynamoRegion: us-east-1 # optional, defaults to 'region'
     # or
     dynamoTableName: none
+    conditionalWrites: false # optional, only with dynamoTableName: none (see below)
 ```
+
+### Several instances without DynamoDB
+
+With `dynamoTableName: none`, the list of private packages and the secret live in
+`<keyPrefix>verdaccio-s3-db.json`. Each change reads that file from S3, applies the change and
+writes it back, and the package list is read from S3 on every request, so several instances can
+share one bucket.
+
+Between the read and the write of two instances there is a window of a few milliseconds. Set
+`conditionalWrites: true` to close it: the write is sent with `If-Match`, and a write that lost
+the race is retried on a fresh copy (up to 5 attempts). Enable it only if your store enforces
+`If-Match` on `PutObject`; AWS S3 and MinIO do, but some S3-compatible stores accept the header
+and ignore it.
 
 ### Environment variable substitution
 

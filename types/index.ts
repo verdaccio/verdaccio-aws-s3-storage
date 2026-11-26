@@ -12,6 +12,8 @@ export interface S3Config extends Config {
   sessionToken?: string;
   proxy?: string;
   dynamoTableName: string;
+  /** S3-only mode: write the database with If-Match and retry on 412. */
+  conditionalWrites?: boolean;
   dynamoEndpoint?: string;
   dynamoRegion?: string;
 }
